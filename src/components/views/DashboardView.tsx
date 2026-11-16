@@ -17,6 +17,7 @@ import {
   Flame,
   Info,
   Plus,
+  Power,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -35,6 +36,7 @@ import { computeDashboardMetrics } from '@/lib/calculations'
 import { formatCurrency, formatPercent, formatR } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
+import { useSecurity } from '@/context/SecurityContext'
 
 interface DashboardViewProps {
   trades: Trade[]
@@ -49,6 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const { currency } = useAuth()
   const { timeRange } = useFilter()
+  const { lock } = useSecurity()
 
   // State for performance calendar navigation
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
@@ -186,6 +189,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
+      {/* Dashboard Top Protocol Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[#202838] bg-[#141A26] px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10141E] border border-[#202838]" style={{ color: 'var(--accent-color, #3B82F6)' }}>
+            <Activity className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[#E2E8F0]">TERMINAL DASHBOARD</span>
+              <span className="flex items-center gap-1 rounded bg-[#18C784]/15 px-1.5 py-0.5 font-mono text-[9px] font-bold text-[#18C784] border border-[#18C784]/30">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#18C784] animate-pulse" />
+                CLEARANCE ACTIVE (12H)
+              </span>
+            </div>
+            <p className="text-[11px] text-[#8493A8]">Real-time quantitative performance tracking & daily journal calibration</p>
+          </div>
+        </div>
+
+        {/* Manual Power Off Button on Dashboard */}
+        <button
+          onClick={lock}
+          title="Manual Power Off / Terminate Session"
+          className="flex items-center gap-1.5 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 px-3 py-1.5 text-xs font-bold text-[#F05265] hover:bg-[#F05265] hover:text-white transition-all shadow-sm cursor-pointer self-start sm:self-auto"
+        >
+          <Power className="h-3.5 w-3.5" />
+          <span>Power Off</span>
+        </button>
+      </div>
+
       {/* 1. TOP 10 KPI CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {/* Net P&L */}

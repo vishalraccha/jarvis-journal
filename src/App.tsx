@@ -20,8 +20,11 @@ import { api } from '@/services/api'
 import { Trade, Strategy } from '@/types/database'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
+import { useSecurity } from '@/context/SecurityContext'
+import { SecurityGate } from '@/components/security/SecurityGate'
 
 export const App: React.FC = () => {
+  const { isLocked } = useSecurity()
   const { activeAccount } = useAuth()
   const { timeRange, filterDateRange, selectedAccountId } = useFilter()
 
@@ -81,6 +84,10 @@ export const App: React.FC = () => {
   const handleDeleteTrade = async (id: string) => {
     await api.deleteTrade(id)
     await loadData()
+  }
+
+  if (isLocked) {
+    return <SecurityGate />
   }
 
   return (

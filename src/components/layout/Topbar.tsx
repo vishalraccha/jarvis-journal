@@ -13,10 +13,12 @@ import {
   LogOut,
   ExternalLink,
   Palette,
+  Power,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { useTheme, THEMES, AppTheme } from '@/context/ThemeContext'
+import { useSecurity } from '@/context/SecurityContext'
 import { TimeFilterRange } from '@/types/database'
 
 interface TopbarProps {
@@ -33,6 +35,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const { profile, accounts, activeAccount, setActiveAccount, currency, setCurrency, isSupabaseConnected, logout } = useAuth()
   const { timeRange, setTimeRange, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate } = useFilter()
   const { theme, setTheme } = useTheme()
+  const { lock } = useSecurity()
 
   const [showCustomDates, setShowCustomDates] = useState(false)
   const [showAccountMenu, setShowAccountMenu] = useState(false)
@@ -253,15 +256,35 @@ export const Topbar: React.FC<TopbarProps> = ({
                 </button>
                 <button
                   onClick={() => logout()}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[#F05265] hover:bg-[#F05265]/10"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Sign Out</span>
+                </button>
+                <button
+                  onClick={() => lock()}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[#F05265] hover:bg-[#F05265]/10 font-medium"
+                >
+                  <Power className="h-3.5 w-3.5" />
+                  <span>Power Off (Lock)</span>
                 </button>
               </div>
             </div>
           )}
         </div>
+
+        {/* Manual Power Off Button */}
+        <button
+          onClick={() => {
+            if (confirm('Power off Jarvis Journal and lock session?')) {
+              lock()
+            }
+          }}
+          title="Manual Power Off / Terminate Session"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 text-[#F05265] hover:bg-[#F05265] hover:text-white transition-all shadow-sm cursor-pointer"
+        >
+          <Power className="h-4 w-4" />
+        </button>
       </div>
     </header>
   )
