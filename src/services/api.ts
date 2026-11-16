@@ -282,6 +282,7 @@ const INITIAL_TAGS: Tag[] = [
 // Zero dummy trades! Clean array that only receives user-entered trades.
 let inMemoryTrades: Trade[] = []
 let inMemoryAccounts: TradingAccount[] = [...INITIAL_ACCOUNTS]
+let inMemoryInstruments: Instrument[] = [...STANDARD_INSTRUMENTS]
 let inMemoryStrategies: Strategy[] = [...INITIAL_STRATEGIES]
 let inMemoryTags: Tag[] = [...INITIAL_TAGS]
 let inMemoryJournals: DailyJournal[] = []
@@ -409,6 +410,14 @@ export const api = {
     return newAcc
   },
 
+  async deleteTradingAccount(id: string): Promise<void> {
+    if (isSupabaseConfigured) {
+      await supabase.from('trading_accounts').delete().eq('id', id)
+      return
+    }
+    inMemoryAccounts = inMemoryAccounts.filter(a => a.id !== id)
+  },
+
   // Instruments
   async getInstruments(): Promise<Instrument[]> {
     if (isSupabaseConfigured) {
@@ -418,7 +427,74 @@ export const api = {
         .order('symbol', { ascending: true })
       if (!error && data) return data
     }
-    return [...STANDARD_INSTRUMENTS]
+    return [...inMemoryInstruments]
+  },
+
+  async createInstrument(inst: Omit<Instrument, 'id' | 'created_at' | 'updated_at'>): Promise<Instrument> {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('instruments')
+        .insert([inst])
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    }
+    const newInst: Instrument = {
+      ...inst,
+      id: `inst-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    inMemoryInstruments.push(newInst)
+    return newInst
+  },
+
+  async deleteInstrument(id: string): Promise<void> {
+    if (isSupabaseConfigured) {
+      await supabase.from('instruments').delete().eq('id', id)
+      return
+    }
+    inMemoryInstruments = inMemoryInstruments.filter(i => i.id !== id)
+  },
+
+  // Tags & Mistakes
+  async getTags(): Promise<Tag[]> {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .order('name', { ascending: true })
+      if (!error && data) return data
+    }
+    return [...inMemoryTags]
+  },
+
+  async createTag(tag: Omit<Tag, 'id' | 'created_at'>): Promise<Tag> {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('tags')
+        .insert([tag])
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    }
+    const newTag: Tag = {
+      ...tag,
+      id: `tag-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    }
+    inMemoryTags.push(newTag)
+    return newTag
+  },
+
+  async deleteTag(id: string): Promise<void> {
+    if (isSupabaseConfigured) {
+      await supabase.from('tags').delete().eq('id', id)
+      return
+    }
+    inMemoryTags = inMemoryTags.filter(t => t.id !== id)
   },
 
   // Strategies

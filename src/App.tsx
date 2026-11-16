@@ -84,7 +84,10 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090D14] text-[#EAF0F8]">
+    <div
+      style={{ backgroundColor: 'var(--bg-main, #0A0D14)', color: 'var(--text-primary, #E2E8F0)' }}
+      className="flex h-screen w-screen overflow-hidden"
+    >
       {/* 1. Persistent Left Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -178,7 +181,10 @@ export const App: React.FC = () => {
             )}
 
             {(currentTab === 'trading-accounts' || currentTab === 'instruments' || currentTab === 'tags' || currentTab === 'preferences') && (
-              <SettingsView />
+              <SettingsView
+                initialTab={currentTab}
+                onTabChange={(tab) => setCurrentTab(tab as any)}
+              />
             )}
           </div>
         </main>

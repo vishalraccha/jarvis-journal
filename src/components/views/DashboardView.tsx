@@ -17,7 +17,6 @@ import {
   Flame,
   Info,
   Plus,
-  Sparkles,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -187,22 +186,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Dynamic Data Notification */}
-      {trades.length === 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#287BFF]/30 bg-[#287BFF]/10 p-4 text-xs text-[#EAF0F8]">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="h-5 w-5 text-[#4095FF] shrink-0" />
-            <div>
-              <span className="font-bold text-[#4095FF]">Clean Dynamic Journal Active:</span>{' '}
-              All dummy data has been removed. Only real dynamic trades logged by you will be tracked and analyzed.
-            </div>
-          </div>
-          <div className="font-mono text-[11px] text-[#8493A8]">
-            Click "+ Add Trade" above to log your first trade
-          </div>
-        </div>
-      )}
-
       {/* 1. TOP 10 KPI CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {/* Net P&L */}
