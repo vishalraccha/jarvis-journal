@@ -284,11 +284,10 @@ export const TradeReplayView: React.FC<TradeReplayViewProps> = ({ trades }) => {
             </button>
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 font-semibold text-white shadow-md transition-all ${
-                isPlaying
-                  ? 'bg-[#EAB308] hover:bg-[#ca9a04]'
-                  : 'bg-[#287BFF] hover:bg-[#4095FF] shadow-[#287BFF]/20'
-              }`}
+              style={{
+                backgroundColor: isPlaying ? '#EAB308' : 'var(--accent-color, #3B82F6)',
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 font-semibold text-white shadow-sm transition-all cursor-pointer hover:opacity-90"
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               <span>{isPlaying ? 'Pause' : 'Play'}</span>
@@ -296,7 +295,7 @@ export const TradeReplayView: React.FC<TradeReplayViewProps> = ({ trades }) => {
             <button
               onClick={stepForward}
               title="Step 1 bar forward"
-              className="rounded-lg border border-[#263448] bg-[#101722] p-2 text-[#8493A8] hover:text-[#EAF0F8]"
+              className="rounded-lg border border-[#202838] bg-[#10141E] p-2 text-[#8493A8] hover:text-[#E2E8F0]"
             >
               <SkipForward className="h-4 w-4" />
             </button>
@@ -305,13 +304,16 @@ export const TradeReplayView: React.FC<TradeReplayViewProps> = ({ trades }) => {
           {/* Speed Selector */}
           <div className="flex items-center gap-2">
             <span className="text-[#8493A8]">Speed:</span>
-            <div className="flex items-center rounded-lg border border-[#263448] bg-[#101722] p-0.5 font-mono text-[11px]">
+            <div className="flex items-center rounded-lg border border-[#202838] bg-[#10141E] p-0.5 font-mono text-[11px]">
               {[0.5, 1, 2, 5].map((speed) => (
                 <button
                   key={speed}
                   onClick={() => setPlaybackSpeed(speed)}
+                  style={{
+                    backgroundColor: playbackSpeed === speed ? 'var(--accent-color, #3B82F6)' : undefined,
+                  }}
                   className={`rounded px-2 py-1 ${
-                    playbackSpeed === speed ? 'bg-[#287BFF] text-white font-bold' : 'text-[#8493A8] hover:text-[#EAF0F8]'
+                    playbackSpeed === speed ? 'text-white font-bold' : 'text-[#8493A8] hover:text-[#E2E8F0]'
                   }`}
                 >
                   {speed}x

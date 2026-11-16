@@ -260,21 +260,27 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-3xl rounded-xl border border-[#263448] bg-[#090D14] shadow-2xl animate-in fade-in zoom-in-95 my-8">
+      <div className="relative w-full max-w-3xl rounded-xl border border-[#202838] bg-[#10141E] shadow-2xl animate-in fade-in zoom-in-95 my-8">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#263448] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#202838] px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
+            <div
+              style={{
+                backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+                color: 'var(--accent-color, #3B82F6)',
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg"
+            >
               <Zap className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#EAF0F8]">Quick Trade Entry</h2>
+              <h2 className="text-base font-bold text-[#E2E8F0]">Quick Trade Entry</h2>
               <p className="text-xs text-[#8493A8]">Automated symbol presets, risk targeting, and live P&L calculation</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#8493A8] hover:bg-[#151E2B] hover:text-[#EAF0F8]"
+            className="rounded-lg p-1.5 text-[#8493A8] hover:bg-[#141A26] hover:text-[#E2E8F0]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -472,7 +478,11 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
                     type="button"
                     onClick={() => handleAutoSetTargetR(r)}
                     title={`Calculate exit target at ${r}R`}
-                    className="rounded bg-[#287BFF]/20 px-2 py-0.5 font-mono text-[10px] font-bold text-[#4095FF] hover:bg-[#287BFF]/30 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+                      color: 'var(--accent-color, #3B82F6)',
+                    }}
+                    className="rounded px-2 py-0.5 font-mono text-[10px] font-bold hover:opacity-80 transition-colors"
                   >
                     +{r}R
                   </button>
@@ -651,18 +661,19 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-[#263448] pt-4">
+          <div className="flex items-center justify-end gap-3 border-t border-[#202838] pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-[#263448] bg-[#101722] px-4 py-2 text-xs font-medium text-[#8493A8] hover:text-[#EAF0F8]"
+              className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-xs font-medium text-[#8493A8] hover:text-[#E2E8F0]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-[#287BFF] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#287BFF]/25 hover:bg-[#4095FF] disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+              className="flex items-center gap-2 rounded-lg px-6 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
             >
               {isSubmitting ? 'Saving Trade...' : 'Save Trade to Journal'}
             </button>

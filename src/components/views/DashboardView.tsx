@@ -211,12 +211,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Win Rate */}
-        <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-4 hover:border-[#287BFF]/40 transition-all">
+        <div className="rounded-xl border border-[#202838] bg-[#141A26] p-4 hover:border-[var(--accent-color)]/40 transition-all">
           <div className="flex items-center justify-between text-[#8493A8]">
             <span className="text-[10px] uppercase font-bold tracking-wider">Win Rate</span>
-            <Percent className="h-4 w-4 text-[#287BFF]" />
+            <Percent className="h-4 w-4" style={{ color: 'var(--accent-color, #3B82F6)' }} />
           </div>
-          <div className="mt-2 font-mono text-xl font-extrabold text-[#EAF0F8]">
+          <div className="mt-2 font-mono text-xl font-extrabold text-[#E2E8F0]">
             {formatPercent(metrics.winRate)}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-[#8493A8]">
@@ -228,12 +228,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Profit Factor */}
-        <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-4 hover:border-[#287BFF]/40 transition-all">
+        <div className="rounded-xl border border-[#202838] bg-[#141A26] p-4 hover:border-[var(--accent-color)]/40 transition-all">
           <div className="flex items-center justify-between text-[#8493A8]">
             <span className="text-[10px] uppercase font-bold tracking-wider">Profit Factor</span>
-            <Activity className="h-4 w-4 text-[#4095FF]" />
+            <Activity className="h-4 w-4" style={{ color: 'var(--accent-color, #3B82F6)' }} />
           </div>
-          <div className="mt-2 font-mono text-xl font-extrabold text-[#EAF0F8]">
+          <div className="mt-2 font-mono text-xl font-extrabold text-[#E2E8F0]">
             {metrics.profitFactor.toFixed(2)}
           </div>
           <div className="mt-1 text-[11px] text-[#8493A8]">
@@ -328,12 +328,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Long vs Short Ratio */}
-        <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-4 hover:border-[#287BFF]/40 transition-all">
+        <div className="rounded-xl border border-[#202838] bg-[#141A26] p-4 hover:border-[var(--accent-color)]/40 transition-all">
           <div className="flex items-center justify-between text-[#8493A8]">
             <span className="text-[10px] uppercase font-bold tracking-wider">Directional Edge</span>
-            <BarChart2 className="h-4 w-4 text-[#287BFF]" />
+            <BarChart2 className="h-4 w-4" style={{ color: 'var(--accent-color, #3B82F6)' }} />
           </div>
-          <div className="mt-2 font-mono text-base font-bold text-[#EAF0F8]">
+          <div className="mt-2 font-mono text-base font-bold text-[#E2E8F0]">
             L: {metrics.longWinRate.toFixed(0)}% / S: {metrics.shortWinRate.toFixed(0)}%
           </div>
           <div className="mt-1 text-[11px] text-[#8493A8]">
@@ -343,11 +343,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* 2. PERFORMANCE CALENDAR */}
-      <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-5 shadow-lg">
+      <div className="rounded-xl border border-[#202838] bg-[#141A26] p-5 shadow-lg">
         {/* Calendar Header with Monthly Stats */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#263448] pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#202838] pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
+            <div
+              style={{
+                backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+                color: 'var(--accent-color, #3B82F6)',
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-lg"
+            >
               <CalendarIcon className="h-5 w-5" />
             </div>
             <div>
@@ -480,18 +486,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <AreaChart data={cumulativePnlData}>
                   <defs>
                     <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#287BFF" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#287BFF" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="var(--accent-color, #3B82F6)" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="var(--accent-color, #3B82F6)" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#202838" vertical={false} />
                   <XAxis dataKey="tradeIndex" stroke="#8493A8" fontSize={11} tickLine={false} />
                   <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
+                    contentStyle={{ backgroundColor: '#10141E', borderColor: '#202838', borderRadius: '8px', color: '#E2E8F0' }}
                     formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net Cumulative P&L']}
                   />
-                  <Area type="monotone" dataKey="netPnl" stroke="#287BFF" strokeWidth={2.5} fillOpacity={1} fill="url(#pnlGrad)" />
+                  <Area type="monotone" dataKey="netPnl" stroke="var(--accent-color, #3B82F6)" strokeWidth={2.5} fillOpacity={1} fill="url(#pnlGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}

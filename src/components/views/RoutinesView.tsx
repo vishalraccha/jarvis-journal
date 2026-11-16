@@ -56,25 +56,31 @@ export const RoutinesView: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#263448] bg-[#151E2B] p-4 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#202838] bg-[#141A26] p-4 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
+          <div
+            style={{
+              backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+              color: 'var(--accent-color, #3B82F6)',
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+          >
             <CheckSquare className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#EAF0F8]">Daily Trading Routines & Checklists</h2>
+            <h2 className="text-base font-bold text-[#E2E8F0]">Daily Trading Routines & Checklists</h2>
             <p className="text-xs text-[#8493A8]">Pre-market, execution, and post-market discipline protocols</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-[#263448] bg-[#101722] px-3 py-1.5 text-xs">
-            <Calendar className="h-3.5 w-3.5 text-[#287BFF]" />
+          <div className="flex items-center gap-2 rounded-lg border border-[#202838] bg-[#10141E] px-3 py-1.5 text-xs">
+            <Calendar className="h-3.5 w-3.5" style={{ color: 'var(--accent-color, #3B82F6)' }} />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent font-mono text-xs text-[#EAF0F8] focus:outline-none"
+              className="bg-transparent font-mono text-xs text-[#E2E8F0] focus:outline-none"
             />
           </div>
 

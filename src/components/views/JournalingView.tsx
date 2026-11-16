@@ -141,33 +141,40 @@ export const JournalingView: React.FC<JournalingViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Journal Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#263448] bg-[#151E2B] p-4 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#202838] bg-[#141A26] p-4 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
+          <div
+            style={{
+              backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+              color: 'var(--accent-color, #3B82F6)',
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+          >
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#EAF0F8]">Trading Journal & Notebook</h2>
+            <h2 className="text-base font-bold text-[#E2E8F0]">Trading Journal & Notebook</h2>
             <p className="text-xs text-[#8493A8]">Structured reflection, market plans, and psychological calibration</p>
           </div>
         </div>
 
         {/* Date and Save Status */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-[#263448] bg-[#101722] px-3 py-1.5 text-xs">
-            <Calendar className="h-3.5 w-3.5 text-[#287BFF]" />
+          <div className="flex items-center gap-2 rounded-lg border border-[#202838] bg-[#10141E] px-3 py-1.5 text-xs">
+            <Calendar className="h-3.5 w-3.5" style={{ color: 'var(--accent-color, #3B82F6)' }} />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent font-mono text-xs text-[#EAF0F8] focus:outline-none"
+              className="bg-transparent font-mono text-xs text-[#E2E8F0] focus:outline-none"
             />
           </div>
 
           <button
             onClick={handleSaveJournal}
             disabled={saveStatus === 'saving'}
-            className="flex items-center gap-2 rounded-lg bg-[#287BFF] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-[#287BFF]/20 hover:bg-[#4095FF] disabled:opacity-50"
+            style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
           >
             <Save className="h-4 w-4" />
             <span>{saveStatus === 'saving' ? 'Saving...' : 'Save Entry'}</span>
@@ -176,16 +183,19 @@ export const JournalingView: React.FC<JournalingViewProps> = ({
       </div>
 
       {/* Journal Type Switcher & Mood Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#263448] bg-[#151E2B] p-3 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#202838] bg-[#141A26] p-3 text-xs">
         <div className="flex flex-wrap items-center gap-1.5">
           {journalTypes.map((type) => (
             <button
               key={type.id}
               onClick={() => setJournalType(type.id)}
+              style={{
+                backgroundColor: journalType === type.id ? 'var(--accent-color, #3B82F6)' : undefined,
+              }}
               className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
                 journalType === type.id
-                  ? 'bg-[#287BFF] text-white shadow-sm'
-                  : 'text-[#8493A8] hover:bg-[#101722] hover:text-[#EAF0F8]'
+                  ? 'text-white shadow-sm'
+                  : 'text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]'
               }`}
             >
               {type.label}

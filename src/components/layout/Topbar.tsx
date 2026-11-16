@@ -168,18 +168,20 @@ export const Topbar: React.FC<TopbarProps> = ({
         </div>
 
         {/* Theme Selector */}
-        <div className="hidden lg:flex items-center rounded-lg border border-[#263448] bg-[#101722] px-2 py-1 text-xs">
-          <Palette className="mr-1.5 h-3.5 w-3.5 text-[#8493A8]" />
+        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="hidden lg:flex items-center rounded-lg border bg-[#141A26] px-2 py-1 text-xs">
+          <Palette className="mr-1.5 h-3.5 w-3.5" style={{ color: 'var(--accent-color, #3B82F6)' }} />
           <select
             value={theme}
             onChange={(e) => setTheme(e.target.value as AppTheme)}
-            className="bg-transparent font-medium text-xs text-[#EAF0F8] focus:outline-none cursor-pointer"
+            className="bg-transparent font-medium text-xs text-[#E2E8F0] focus:outline-none cursor-pointer"
           >
-            <option value="charcoal" className="bg-[#151E2B] text-[#EAF0F8]">Dark Charcoal</option>
-            <option value="obsidian" className="bg-[#151E2B] text-[#EAF0F8]">Obsidian Grey</option>
-            <option value="midnight" className="bg-[#151E2B] text-[#EAF0F8]">Midnight Navy</option>
-            <option value="emerald" className="bg-[#151E2B] text-[#EAF0F8]">Onyx Emerald</option>
-            <option value="cyber" className="bg-[#151E2B] text-[#EAF0F8]">Cyber Terminal</option>
+            <option value="blue" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Blue</option>
+            <option value="green" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Green</option>
+            <option value="orange" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Orange</option>
+            <option value="yellow" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Yellow</option>
+            <option value="charcoal" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey Monochrome</option>
+            <option value="cyan" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Cyan</option>
+            <option value="purple" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Purple</option>
           </select>
         </div>
 

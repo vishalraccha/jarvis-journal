@@ -108,20 +108,27 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#263448] bg-[#151E2B] p-4 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#202838] bg-[#141A26] p-4 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
+          <div
+            style={{
+              backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+              color: 'var(--accent-color, #3B82F6)',
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+          >
             <Target className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#EAF0F8]">Playbook Strategies & Setups</h2>
+            <h2 className="text-base font-bold text-[#E2E8F0]">Playbook Strategies & Setups</h2>
             <p className="text-xs text-[#8493A8]">Define edge rules, entry/exit criteria, and evaluate statistical viability</p>
           </div>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-1.5 rounded-lg bg-[#287BFF] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-[#287BFF]/20 hover:bg-[#4095FF]"
+          style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+          className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span>New Strategy</span>
@@ -295,13 +302,14 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg border border-[#263448] bg-[#101722] px-4 py-2 text-xs text-[#8493A8] hover:text-[#EAF0F8]"
+                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-xs text-[#8493A8] hover:text-[#E2E8F0]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-[#287BFF] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4095FF]"
+                  style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+                  className="rounded-lg px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition-all cursor-pointer"
                 >
                   {editingStrategy ? 'Update Strategy' : 'Create Strategy'}
                 </button>

@@ -181,9 +181,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                       {item.badge && (
                         <span
+                          style={{
+                            color: item.badge === 'AI' ? 'var(--accent-color, #3B82F6)' : undefined,
+                            borderColor: item.badge === 'AI' ? 'var(--accent-border, rgba(59,130,246,0.3))' : undefined,
+                            backgroundColor: item.badge === 'AI' ? 'var(--accent-muted, rgba(59,130,246,0.15))' : undefined,
+                          }}
                           className={`rounded px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider ${
                             item.badge === 'AI'
-                              ? 'bg-[#202838] text-[#93C5FD] border border-[#202838]'
+                              ? 'border'
                               : 'bg-[#18C784]/15 text-[#18C784] border border-[#18C784]/30'
                           }`}
                         >

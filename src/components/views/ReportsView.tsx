@@ -125,15 +125,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ trades }) => {
       </div>
 
       {/* Report Switcher Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-[#263448] bg-[#151E2B] p-2 text-xs no-print">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-[#202838] bg-[#141A26] p-2 text-xs no-print">
         {reportList.map((rep) => (
           <button
             key={rep.id}
             onClick={() => setSelectedReport(rep.id)}
+            style={{
+              backgroundColor: selectedReport === rep.id ? 'var(--accent-color, #3B82F6)' : undefined,
+            }}
             className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
               selectedReport === rep.id
-                ? 'bg-[#287BFF] text-white shadow-sm font-semibold'
-                : 'text-[#8493A8] hover:bg-[#101722] hover:text-[#EAF0F8]'
+                ? 'text-white shadow-sm font-semibold'
+                : 'text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]'
             }`}
           >
             {rep.label}
@@ -142,11 +145,11 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ trades }) => {
       </div>
 
       {/* Report Document Presentation */}
-      <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-6 shadow-xl space-y-6">
-        <div className="flex items-center justify-between border-b border-[#263448] pb-4">
+      <div className="rounded-xl border border-[#202838] bg-[#141A26] p-6 shadow-xl space-y-6">
+        <div className="flex items-center justify-between border-b border-[#202838] pb-4">
           <div>
-            <div className="text-xs uppercase font-bold tracking-widest text-[#4095FF]">JARVIS JOURNAL STATEMENT</div>
-            <h1 className="text-xl font-extrabold text-[#EAF0F8] mt-1 capitalize">
+            <div className="text-xs uppercase font-bold tracking-widest" style={{ color: 'var(--accent-color, #3B82F6)' }}>JARVIS JOURNAL STATEMENT</div>
+            <h1 className="text-xl font-extrabold text-[#E2E8F0] mt-1 capitalize">
               {reportList.find(r => r.id === selectedReport)?.label}
             </h1>
             <p className="text-xs text-[#8493A8]">Generated on {new Date().toLocaleString()}</p>

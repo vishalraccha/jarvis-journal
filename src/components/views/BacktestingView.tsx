@@ -132,22 +132,34 @@ export const BacktestingView: React.FC<BacktestingViewProps> = ({ strategies }) 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Strict Separation Notice Banner */}
-      <div className="flex items-center gap-3 rounded-xl border border-[#287BFF]/30 bg-[#287BFF]/10 p-4 text-xs text-[#EAF0F8]">
-        <Shield className="h-5 w-5 text-[#4095FF] shrink-0" />
+      <div
+        style={{
+          borderColor: 'var(--accent-border, rgba(59,130,246,0.4))',
+          backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+        }}
+        className="flex items-center gap-3 rounded-xl border p-4 text-xs text-[#E2E8F0]"
+      >
+        <Shield className="h-5 w-5 shrink-0" style={{ color: 'var(--accent-color, #3B82F6)' }} />
         <div>
-          <span className="font-bold text-[#4095FF]">ISOLATED BACKTESTING ENVIRONMENT:</span>{' '}
+          <span className="font-bold" style={{ color: 'var(--accent-color, #3B82F6)' }}>ISOLATED BACKTESTING ENVIRONMENT:</span>{' '}
           All executions in this simulator are stored in dedicated backtest tables and will never contaminate your live journal statistics.
         </div>
       </div>
 
       {/* Header & Session Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#263448] bg-[#151E2B] p-4 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#202838] bg-[#141A26] p-4 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
+          <div
+            style={{
+              backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+              color: 'var(--accent-color, #3B82F6)',
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+          >
             <History className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#EAF0F8]">Manual Backtesting Simulator</h2>
+            <h2 className="text-base font-bold text-[#E2E8F0]">Manual Backtesting Simulator</h2>
             <p className="text-xs text-[#8493A8]">Execute historical trades bar-by-bar and test rule consistency</p>
           </div>
         </div>
@@ -159,7 +171,7 @@ export const BacktestingView: React.FC<BacktestingViewProps> = ({ strategies }) 
               const found = sessions.find(s => s.id === e.target.value)
               if (found) setActiveSession(found)
             }}
-            className="rounded-lg border border-[#263448] bg-[#101722] px-3 py-2 text-xs text-[#EAF0F8] focus:border-[#287BFF] focus:outline-none"
+            className="rounded-lg border border-[#202838] bg-[#10141E] px-3 py-2 text-xs text-[#E2E8F0] focus:border-[var(--accent-color)] focus:outline-none"
           >
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>
@@ -170,7 +182,8 @@ export const BacktestingView: React.FC<BacktestingViewProps> = ({ strategies }) 
 
           <button
             onClick={() => setIsNewSessionOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-[#287BFF] px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-[#287BFF]/20 hover:bg-[#4095FF]"
+            style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+            className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>New Session</span>

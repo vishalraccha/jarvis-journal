@@ -29,9 +29,15 @@ export default {
           hover: "#1A2536",
         },
         primary: {
-          DEFAULT: "#287BFF",
+          DEFAULT: "var(--accent-color, #3B82F6)",
           foreground: "#FFFFFF",
-          bright: "#4095FF",
+          bright: "var(--accent-hover, #60A5FA)",
+        },
+        accent: {
+          DEFAULT: "var(--accent-color, #3B82F6)",
+          hover: "var(--accent-hover, #60A5FA)",
+          muted: "var(--accent-muted, rgba(59, 130, 246, 0.15))",
+          border: "var(--accent-border, rgba(59, 130, 246, 0.4))",
         },
         profit: {
           DEFAULT: "#18C784",
@@ -50,15 +56,15 @@ export default {
           subtle: "#1C2738",
         },
         terminal: {
-          bg: "#090D14",
-          surface: "#101722",
-          card: "#151E2B",
-          border: "#263448",
-          borderLight: "#33455F",
-          text: "#EAF0F8",
-          muted: "#8493A8",
-          accent: "#287BFF",
-          accentHover: "#4095FF",
+          bg: "var(--bg-main, #0A0E17)",
+          surface: "var(--bg-surface, #10141E)",
+          card: "var(--bg-card, #141A26)",
+          border: "var(--border-color, #202838)",
+          borderLight: "#2B384E",
+          text: "var(--text-primary, #E2E8F0)",
+          muted: "var(--text-muted, #8493A8)",
+          accent: "var(--accent-color, #3B82F6)",
+          accentHover: "var(--accent-hover, #60A5FA)",
         }
       },
       fontFamily: {

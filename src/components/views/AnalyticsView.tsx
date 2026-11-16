@@ -223,10 +223,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ trades }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              style={{
+                backgroundColor: isActive ? 'var(--accent-color, #3B82F6)' : undefined,
+              }}
               className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-[#287BFF] text-white shadow-md shadow-[#287BFF]/20'
-                  : 'text-[#8493A8] hover:bg-[#101722] hover:text-[#EAF0F8]'
+                  ? 'text-white shadow-sm'
+                  : 'text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]'
               }`}
             >
               <Icon className="h-3.5 w-3.5" />

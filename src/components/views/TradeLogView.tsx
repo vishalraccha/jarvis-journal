@@ -197,35 +197,44 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Top Controls: Subview switcher, Search, Filters, CSV Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#263448] bg-[#151E2B] p-4 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#202838] bg-[#141A26] p-4 shadow-lg">
         {/* View Switcher: DAY | WEEK | ALL */}
-        <div className="flex items-center rounded-lg border border-[#263448] bg-[#101722] p-1">
+        <div className="flex items-center rounded-lg border border-[#202838] bg-[#10141E] p-1">
           <button
             onClick={() => setSubView('day')}
+            style={{
+              backgroundColor: subView === 'day' ? 'var(--accent-color, #3B82F6)' : undefined,
+            }}
             className={`rounded px-4 py-1.5 text-xs font-semibold transition-all ${
               subView === 'day'
-                ? 'bg-[#287BFF] text-white shadow-sm'
-                : 'text-[#8493A8] hover:text-[#EAF0F8]'
+                ? 'text-white shadow-sm'
+                : 'text-[#8493A8] hover:text-[#E2E8F0]'
             }`}
           >
             DAY
           </button>
           <button
             onClick={() => setSubView('week')}
+            style={{
+              backgroundColor: subView === 'week' ? 'var(--accent-color, #3B82F6)' : undefined,
+            }}
             className={`rounded px-4 py-1.5 text-xs font-semibold transition-all ${
               subView === 'week'
-                ? 'bg-[#287BFF] text-white shadow-sm'
-                : 'text-[#8493A8] hover:text-[#EAF0F8]'
+                ? 'text-white shadow-sm'
+                : 'text-[#8493A8] hover:text-[#E2E8F0]'
             }`}
           >
             WEEK
           </button>
           <button
             onClick={() => setSubView('all')}
+            style={{
+              backgroundColor: subView === 'all' ? 'var(--accent-color, #3B82F6)' : undefined,
+            }}
             className={`rounded px-4 py-1.5 text-xs font-semibold transition-all ${
               subView === 'all'
-                ? 'bg-[#287BFF] text-white shadow-sm'
-                : 'text-[#8493A8] hover:text-[#EAF0F8]'
+                ? 'text-white shadow-sm'
+                : 'text-[#8493A8] hover:text-[#E2E8F0]'
             }`}
           >
             ALL
@@ -241,14 +250,14 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
               placeholder="Search symbol, setup..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="rounded-lg border border-[#263448] bg-[#101722] pl-8 pr-3 py-1.5 text-xs text-[#EAF0F8] placeholder-[#8493A8] focus:border-[#287BFF] focus:outline-none w-44 sm:w-56"
+              className="rounded-lg border border-[#202838] bg-[#10141E] pl-8 pr-3 py-1.5 text-xs text-[#E2E8F0] placeholder-[#8493A8] focus:border-[var(--accent-color,#3B82F6)] focus:outline-none w-44 sm:w-56"
             />
           </div>
 
           <button
             onClick={handleExportCSV}
             title="Export filtered trades to CSV"
-            className="flex items-center gap-1.5 rounded-lg border border-[#263448] bg-[#101722] px-3 py-1.5 text-xs font-medium text-[#8493A8] hover:text-[#EAF0F8]"
+            className="flex items-center gap-1.5 rounded-lg border border-[#202838] bg-[#10141E] px-3 py-1.5 text-xs font-medium text-[#8493A8] hover:text-[#E2E8F0]"
           >
             <Download className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Export</span>
@@ -257,7 +266,7 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
           <button
             onClick={onOpenImportTrades}
             title="Import trades via CSV"
-            className="flex items-center gap-1.5 rounded-lg border border-[#263448] bg-[#101722] px-3 py-1.5 text-xs font-medium text-[#8493A8] hover:text-[#EAF0F8]"
+            className="flex items-center gap-1.5 rounded-lg border border-[#202838] bg-[#10141E] px-3 py-1.5 text-xs font-medium text-[#8493A8] hover:text-[#E2E8F0]"
           >
             <Upload className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Import</span>
@@ -265,7 +274,8 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
 
           <button
             onClick={onOpenAddTrade}
-            className="flex items-center gap-1.5 rounded-lg bg-[#287BFF] px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-[#287BFF]/20 hover:bg-[#4095FF]"
+            style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add Trade</span>

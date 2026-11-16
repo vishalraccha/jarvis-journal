@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
-export type AppTheme = 'charcoal' | 'obsidian' | 'midnight' | 'emerald' | 'cyber'
+export type AppTheme = 'blue' | 'green' | 'orange' | 'yellow' | 'charcoal' | 'cyan' | 'purple'
 
 export interface ThemeConfig {
   id: AppTheme
   name: string
+  label: string
+  colorName: string
   description: string
   bg: string
   surface: string
@@ -12,75 +14,106 @@ export interface ThemeConfig {
   border: string
   accent: string
   accentHover: string
+  accentMuted: string
+  accentBorder: string
   textPrimary: string
   textMuted: string
 }
 
+// Consistent dark gray terminal foundation across ALL themes
+const DARK_GRAY_FOUNDATION = {
+  bg: '#0A0E17',
+  surface: '#10141E',
+  card: '#141A26',
+  border: '#202838',
+  textPrimary: '#E2E8F0',
+  textMuted: '#8493A8',
+}
+
 export const THEMES: Record<AppTheme, ThemeConfig> = {
-  charcoal: {
-    id: 'charcoal',
-    name: 'Dark Charcoal & Steel (Default)',
-    description: 'Refined institutional trading desk. Subtle dark grey with precision steel-blue accents.',
-    bg: '#0A0D14',
-    surface: '#10141E',
-    card: '#141A26',
-    border: '#202838',
+  blue: {
+    id: 'blue',
+    name: 'Dark Grey & Blue',
+    label: 'Blue Terminal',
+    colorName: 'Steel Blue',
+    description: 'Dark grey terminal background with precision steel-blue accents.',
+    ...DARK_GRAY_FOUNDATION,
     accent: '#3B82F6',
     accentHover: '#60A5FA',
-    textPrimary: '#E2E8F0',
-    textMuted: '#8493A8',
+    accentMuted: 'rgba(59, 130, 246, 0.15)',
+    accentBorder: 'rgba(59, 130, 246, 0.4)',
   },
-  obsidian: {
-    id: 'obsidian',
-    name: 'Obsidian Grey (Monochrome)',
-    description: 'Minimalist stealth terminal. Pure neutral dark greys with platinum highlights.',
-    bg: '#09090B',
-    surface: '#0F0F12',
-    card: '#141418',
-    border: '#23232A',
-    accent: '#71717A',
-    accentHover: '#A1A1AA',
-    textPrimary: '#F4F4F5',
-    textMuted: '#71717A',
-  },
-  midnight: {
-    id: 'midnight',
-    name: 'Midnight Navy',
-    description: 'Deep midnight blue tones reminiscent of Bloomberg professional terminals.',
-    bg: '#070A12',
-    surface: '#0D1220',
-    card: '#11182B',
-    border: '#1B253D',
-    accent: '#2563EB',
-    accentHover: '#3B82F6',
-    textPrimary: '#E0E7FF',
-    textMuted: '#7E8FA6',
-  },
-  emerald: {
-    id: 'emerald',
-    name: 'Onyx Emerald',
-    description: 'Trading floor theme with dark graphite and muted emerald accents.',
-    bg: '#070D0B',
-    surface: '#0D1612',
-    card: '#121E19',
-    border: '#1B2F25',
+  green: {
+    id: 'green',
+    name: 'Dark Grey & Green',
+    label: 'Emerald Terminal',
+    colorName: 'Emerald Green',
+    description: 'Dark grey terminal background with crisp emerald green accents.',
+    ...DARK_GRAY_FOUNDATION,
     accent: '#10B981',
     accentHover: '#34D399',
-    textPrimary: '#ECFDF5',
-    textMuted: '#6EE7B7',
+    accentMuted: 'rgba(16, 185, 129, 0.15)',
+    accentBorder: 'rgba(16, 185, 129, 0.4)',
   },
-  cyber: {
-    id: 'cyber',
-    name: 'Cyber Terminal',
-    description: 'High-contrast dark terminal with precision cyan-blue highlights.',
-    bg: '#05070B',
-    surface: '#0B0F17',
-    card: '#0F1522',
-    border: '#1B2436',
-    accent: '#0EA5E9',
-    accentHover: '#38BDF8',
-    textPrimary: '#F0F9FF',
-    textMuted: '#7DD3FC',
+  orange: {
+    id: 'orange',
+    name: 'Dark Grey & Orange',
+    label: 'Amber Terminal',
+    colorName: 'Amber Orange',
+    description: 'Dark grey terminal background with dynamic amber orange accents.',
+    ...DARK_GRAY_FOUNDATION,
+    accent: '#F97316',
+    accentHover: '#FB923C',
+    accentMuted: 'rgba(249, 115, 22, 0.15)',
+    accentBorder: 'rgba(249, 115, 22, 0.4)',
+  },
+  yellow: {
+    id: 'yellow',
+    name: 'Dark Grey & Yellow',
+    label: 'Gold / Yellow Terminal',
+    colorName: 'Cyber Yellow',
+    description: 'Dark grey terminal background with high-visibility gold/yellow accents.',
+    ...DARK_GRAY_FOUNDATION,
+    accent: '#EAB308',
+    accentHover: '#FACC15',
+    accentMuted: 'rgba(234, 179, 8, 0.15)',
+    accentBorder: 'rgba(234, 179, 8, 0.4)',
+  },
+  charcoal: {
+    id: 'charcoal',
+    name: 'Dark Grey & Slate',
+    label: 'Platinum Slate',
+    colorName: 'Monochrome Slate',
+    description: 'Dark grey terminal background with subtle stealth platinum slate accents.',
+    ...DARK_GRAY_FOUNDATION,
+    accent: '#94A3B8',
+    accentHover: '#CBD5E1',
+    accentMuted: 'rgba(148, 163, 184, 0.15)',
+    accentBorder: 'rgba(148, 163, 184, 0.4)',
+  },
+  cyan: {
+    id: 'cyan',
+    name: 'Dark Grey & Cyan',
+    label: 'Cyan Terminal',
+    colorName: 'Electric Cyan',
+    description: 'Dark grey terminal background with crisp cyan-blue highlights.',
+    ...DARK_GRAY_FOUNDATION,
+    accent: '#06B6D4',
+    accentHover: '#22D3EE',
+    accentMuted: 'rgba(6, 182, 212, 0.15)',
+    accentBorder: 'rgba(6, 182, 212, 0.4)',
+  },
+  purple: {
+    id: 'purple',
+    name: 'Dark Grey & Purple',
+    label: 'Violet Terminal',
+    colorName: 'Royal Violet',
+    description: 'Dark grey terminal background with executive purple accents.',
+    ...DARK_GRAY_FOUNDATION,
+    accent: '#8B5CF6',
+    accentHover: '#A78BFA',
+    accentMuted: 'rgba(139, 92, 246, 0.15)',
+    accentBorder: 'rgba(139, 92, 246, 0.4)',
   },
 }
 
@@ -94,23 +127,26 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // In-memory theme state to comply with zero persistent browser storage
-  const [theme, setTheme] = useState<AppTheme>('charcoal')
+  const [theme, setTheme] = useState<AppTheme>('blue')
 
-  const themeConfig = THEMES[theme]
+  const themeConfig = THEMES[theme] || THEMES.blue
 
   useEffect(() => {
     // Apply CSS variables to root
     const root = document.documentElement
+    root.setAttribute('data-theme', themeConfig.id)
     root.style.setProperty('--bg-main', themeConfig.bg)
     root.style.setProperty('--bg-surface', themeConfig.surface)
     root.style.setProperty('--bg-card', themeConfig.card)
     root.style.setProperty('--border-color', themeConfig.border)
     root.style.setProperty('--accent-color', themeConfig.accent)
     root.style.setProperty('--accent-hover', themeConfig.accentHover)
+    root.style.setProperty('--accent-muted', themeConfig.accentMuted)
+    root.style.setProperty('--accent-border', themeConfig.accentBorder)
     root.style.setProperty('--text-primary', themeConfig.textPrimary)
     root.style.setProperty('--text-muted', themeConfig.textMuted)
 
-    // Set body background
+    // Set body background to always keep dark grey
     document.body.style.backgroundColor = themeConfig.bg
     document.body.style.color = themeConfig.textPrimary
   }, [themeConfig])

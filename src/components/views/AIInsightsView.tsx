@@ -78,7 +78,10 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
       {/* AI Assistant Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#263448] bg-gradient-to-r from-[#101722] via-[#151E2B] to-[#101722] p-5 shadow-xl">
         <div className="flex items-center gap-3.5">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-[#287BFF] text-white shadow-lg shadow-[#287BFF]/30">
+          <div
+            style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+            className="relative flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md"
+          >
             <Bot className="h-6 w-6" />
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#18C784] opacity-75"></span>
@@ -87,8 +90,15 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-[#EAF0F8]">JARVIS AI Performance Coach</h2>
-              <span className="rounded-md bg-[#287BFF]/20 px-2 py-0.5 font-mono text-[10px] font-bold text-[#4095FF]">
+              <h2 className="text-base font-bold text-[#E2E8F0]">JARVIS AI Performance Coach</h2>
+              <span
+                style={{
+                  backgroundColor: 'var(--accent-muted, rgba(59,130,246,0.15))',
+                  color: 'var(--accent-color, #3B82F6)',
+                  borderColor: 'var(--accent-border, rgba(59,130,246,0.4))',
+                }}
+                className="rounded-md border px-2 py-0.5 font-mono text-[10px] font-bold"
+              >
                 LIVE TRADING AUDIT
               </span>
             </div>
@@ -100,9 +110,9 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
       </div>
 
       {/* Suggested Questions */}
-      <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-5 shadow-lg">
+      <div className="rounded-xl border border-[#202838] bg-[#141A26] p-5 shadow-lg">
         <div className="text-xs font-semibold uppercase tracking-wider text-[#8493A8] mb-3 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-[#287BFF]" />
+          <Sparkles className="h-3.5 w-3.5" style={{ color: 'var(--accent-color, #3B82F6)' }} />
           <span>Ask Jarvis AI About Your Trading Data</span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -110,11 +120,12 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
             <button
               key={idx}
               onClick={() => handleAskQuestion(q)}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition-all text-left ${
-                selectedPrompt === q
-                  ? 'border-[#287BFF] bg-[#287BFF]/20 text-[#4095FF] font-semibold'
-                  : 'border-[#263448] bg-[#101722] text-[#8493A8] hover:border-[#4095FF] hover:text-[#EAF0F8]'
-              }`}
+              style={{
+                borderColor: selectedPrompt === q ? 'var(--accent-color, #3B82F6)' : 'var(--border-color, #202838)',
+                backgroundColor: selectedPrompt === q ? 'var(--accent-muted, rgba(59,130,246,0.15))' : '#10141E',
+                color: selectedPrompt === q ? 'var(--accent-color, #3B82F6)' : '#8493A8',
+              }}
+              className="rounded-lg border px-3 py-1.5 text-xs transition-all text-left font-medium hover:text-[#E2E8F0]"
             >
               {q}
             </button>

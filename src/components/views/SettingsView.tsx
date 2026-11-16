@@ -461,10 +461,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           {/* THEME SELECTION SECTION */}
           <div className="rounded-xl border border-[#202838] bg-[#141A26] p-6 shadow-lg space-y-4">
             <div className="flex items-center gap-2.5 border-b border-[#202838] pb-3">
-              <Palette className="h-5 w-5 text-[#3B82F6]" />
+              <Palette className="h-5 w-5 text-[#3B82F6]" style={{ color: 'var(--accent-color, #3B82F6)' }} />
               <div>
                 <h3 className="text-sm font-bold text-[#E2E8F0]">Terminal Color Theme</h3>
-                <p className="text-xs text-[#8493A8]">Choose your preferred terminal palette (dark grey charcoal, stealth obsidian, or professional navy)</p>
+                <p className="text-xs text-[#8493A8]">Consistent institutional dark grey base with dynamic accent colors (Green, Orange, Blue, Yellow, Slate)</p>
               </div>
             </div>
 
@@ -477,16 +477,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     key={themeKey}
                     type="button"
                     onClick={() => setTheme(themeKey)}
+                    style={{
+                      borderColor: isSelected ? item.accent : 'var(--border-color, #202838)',
+                      boxShadow: isSelected ? `0 0 0 1px ${item.accent}` : undefined,
+                    }}
                     className={`relative rounded-xl border p-4 text-left transition-all ${
                       isSelected
-                        ? 'border-[#3B82F6] ring-1 ring-[#3B82F6] bg-[#10141E]'
+                        ? 'bg-[#10141E]'
                         : 'border-[#202838] bg-[#10141E]/60 hover:border-[#202838]'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-xs text-[#E2E8F0]">{item.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.accent }} />
+                        <span className="font-bold text-xs text-[#E2E8F0]">{item.name}</span>
+                      </div>
                       {isSelected && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3B82F6] text-white">
+                        <span
+                          style={{ backgroundColor: item.accent }}
+                          className="flex h-5 w-5 items-center justify-center rounded-full text-white shadow-sm"
+                        >
                           <Check className="h-3 w-3" />
                         </span>
                       )}
@@ -494,11 +504,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <p className="text-[11px] text-[#8493A8] mb-3 leading-relaxed">{item.description}</p>
 
                     {/* Palette swatch preview */}
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-[#202838]/60">
-                      <span className="h-4 w-4 rounded" style={{ backgroundColor: item.bg }} title="Background" />
-                      <span className="h-4 w-4 rounded" style={{ backgroundColor: item.card }} title="Card Background" />
-                      <span className="h-4 w-4 rounded" style={{ backgroundColor: item.border }} title="Borders" />
-                      <span className="h-4 w-4 rounded" style={{ backgroundColor: item.accent }} title="Accent" />
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[#202838]/60 text-[10px] text-[#8493A8]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-3.5 w-3.5 rounded border border-[#202838]" style={{ backgroundColor: item.bg }} title="Dark Grey Background" />
+                        <span className="h-3.5 w-3.5 rounded border border-[#202838]" style={{ backgroundColor: item.card }} title="Dark Grey Card" />
+                        <span className="h-3.5 px-1.5 rounded font-mono text-[9px] font-bold text-center flex items-center justify-center text-white" style={{ backgroundColor: item.accent }} title="Accent Color">
+                          {item.colorName}
+                        </span>
+                      </div>
+                      <span className="font-medium text-[11px]" style={{ color: item.accent }}>
+                        {isSelected ? 'Active' : 'Select'}
+                      </span>
                     </div>
                   </button>
                 )
