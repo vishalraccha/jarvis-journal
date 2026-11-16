@@ -19,19 +19,21 @@ import {
 import { calculateTradePnl, computeDashboardMetrics } from '@/lib/calculations'
 
 // ==============================================================================
-// IN-MEMORY STORE (Used when Supabase credentials are in setup mode or for UI interactions)
-// Never touches browser databases (localStorage/IndexedDB) as requested!
+// DYNAMIC IN-MEMORY STORE
+// Only stores real dynamic user data entered by the user.
+// Zero dummy/fake trades or fabricated statistics!
+// Strictly complies with "No localStorage/sessionStorage/IndexedDB" requirement.
 // ==============================================================================
 
 const INITIAL_PROFILE: Profile = {
   id: 'user-jarvis-1',
-  username: 'jarvis_trader',
-  full_name: 'Vishal (Jarvis Terminal)',
+  username: 'trader',
+  full_name: 'Jarvis Trader',
   avatar_url: null,
   base_currency: 'USD',
   timezone: 'America/New_York',
   onboarding_completed: true,
-  created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+  created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
 
@@ -39,48 +41,20 @@ const INITIAL_ACCOUNTS: TradingAccount[] = [
   {
     id: 'acc-1',
     user_id: 'user-jarvis-1',
-    name: 'Apex 50k Futures #1428',
-    account_type: 'evaluation',
-    broker: 'Tradovate / Apex Trader Funding',
-    initial_balance: 50000,
-    current_balance: 54320.50,
+    name: 'Primary Trading Account',
+    account_type: 'live',
+    broker: 'Live Brokerage',
+    initial_balance: 10000,
+    current_balance: 10000,
     currency: 'USD',
     is_default: true,
     is_active: true,
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'acc-2',
-    user_id: 'user-jarvis-1',
-    name: 'Interactive Brokers Pro (Equities)',
-    account_type: 'live',
-    broker: 'Interactive Brokers',
-    initial_balance: 25000,
-    current_balance: 28450.00,
-    currency: 'USD',
-    is_default: false,
-    is_active: true,
-    created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'acc-3',
-    user_id: 'user-jarvis-1',
-    name: 'Binance USDT-M Futures',
-    account_type: 'live',
-    broker: 'Binance',
-    initial_balance: 10000,
-    current_balance: 11980.20,
-    currency: 'USD',
-    is_default: false,
-    is_active: true,
-    created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
+    created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
 ]
 
-const INITIAL_INSTRUMENTS: Instrument[] = [
+export const STANDARD_INSTRUMENTS: Instrument[] = [
   {
     id: 'inst-1',
     symbol: 'NQ',
@@ -125,6 +99,20 @@ const INITIAL_INSTRUMENTS: Instrument[] = [
   },
   {
     id: 'inst-4',
+    symbol: 'ETH/USDT',
+    name: 'Ethereum / Tether Perpetual',
+    asset_class: 'crypto',
+    tick_size: 0.01,
+    tick_value: 0.01,
+    contract_size: 1.0,
+    point_value: 1.0,
+    default_commission: 0.50,
+    currency: 'USDT',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'inst-5',
     symbol: 'XAU/USD',
     name: 'Gold / US Dollar',
     asset_class: 'commodities',
@@ -138,7 +126,7 @@ const INITIAL_INSTRUMENTS: Instrument[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'inst-5',
+    id: 'inst-6',
     symbol: 'EUR/USD',
     name: 'Euro / US Dollar',
     asset_class: 'forex',
@@ -152,7 +140,49 @@ const INITIAL_INSTRUMENTS: Instrument[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'inst-6',
+    id: 'inst-7',
+    symbol: 'GBP/USD',
+    name: 'British Pound / US Dollar',
+    asset_class: 'forex',
+    tick_size: 0.00001,
+    tick_value: 1.0,
+    contract_size: 100000.0,
+    point_value: 100000.0,
+    default_commission: 2.50,
+    currency: 'USD',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'inst-8',
+    symbol: 'SPY',
+    name: 'SPDR S&P 500 ETF Trust',
+    asset_class: 'stocks',
+    tick_size: 0.01,
+    tick_value: 0.01,
+    contract_size: 1.0,
+    point_value: 1.0,
+    default_commission: 0.00,
+    currency: 'USD',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'inst-9',
+    symbol: 'QQQ',
+    name: 'Invesco QQQ Trust',
+    asset_class: 'stocks',
+    tick_size: 0.01,
+    tick_value: 0.01,
+    contract_size: 1.0,
+    point_value: 1.0,
+    default_commission: 0.00,
+    currency: 'USD',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'inst-10',
     symbol: 'NVDA',
     name: 'NVIDIA Corporation',
     asset_class: 'stocks',
@@ -166,9 +196,23 @@ const INITIAL_INSTRUMENTS: Instrument[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'inst-7',
+    id: 'inst-11',
     symbol: 'TSLA',
     name: 'Tesla, Inc.',
+    asset_class: 'stocks',
+    tick_size: 0.01,
+    tick_value: 0.01,
+    contract_size: 1.0,
+    point_value: 1.0,
+    default_commission: 0.00,
+    currency: 'USD',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'inst-12',
+    symbol: 'AAPL',
+    name: 'Apple Inc.',
     asset_class: 'stocks',
     tick_size: 0.01,
     tick_value: 0.01,
@@ -186,42 +230,42 @@ const INITIAL_STRATEGIES: Strategy[] = [
     id: 'strat-1',
     user_id: 'user-jarvis-1',
     name: 'Opening Range Breakout (ORB)',
-    description: '15-minute Opening Range Breakout at NY Market open with high relative volume and liquidity sweep confirmation.',
-    entry_conditions: '5-minute close above/below 15m range with volume > 1.5x 20 EMA volume.',
+    description: '15-minute Opening Range Breakout with high relative volume confirmation.',
+    entry_conditions: '5-minute close above/below 15m range.',
     exit_conditions: '2R target or VWAP reversal break.',
     stop_loss_rules: 'Placed at midpoint of the 15-minute opening candle.',
-    take_profit_rules: 'Target 1 at 2R (50%), Target 2 at prior day high/low.',
+    take_profit_rules: 'Target 1 at 2R, Target 2 at prior day high/low.',
     color: '#287BFF',
     is_active: true,
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+    created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'strat-2',
     user_id: 'user-jarvis-1',
-    name: 'ICT Silver Bullet / Fair Value Gap',
-    description: 'London / NY morning session Fair Value Gap (FVG) retest following liquidity grab (BSL/SSL).',
-    entry_conditions: 'Liquidity sweep + market structure shift (MSS) + entry inside 1m/5m FVG.',
-    exit_conditions: 'Opposing key level liquidity pool or fixed 3R.',
+    name: 'Fair Value Gap / Liquidity Sweep',
+    description: 'Liquidity grab followed by Market Structure Shift (MSS) and FVG retest.',
+    entry_conditions: 'Liquidity sweep + MSS + entry in 5m FVG.',
+    exit_conditions: 'Opposing liquidity pool or 2.5R target.',
     stop_loss_rules: 'Beyond swing high/low that caused displacement.',
     take_profit_rules: 'Draw on liquidity (DOL) target.',
     color: '#18C784',
     is_active: true,
-    created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
+    created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'strat-3',
     user_id: 'user-jarvis-1',
     name: 'VWAP Mean Reversion',
-    description: 'Extended moves into 2+ standard deviation VWAP bands with RSI divergence.',
-    entry_conditions: 'Candle wick rejection at 2.5 VWAP deviation band + RSI extreme (>75 or <25).',
-    exit_conditions: 'Mean reversion back to VWAP baseline.',
-    stop_loss_rules: 'Fixed 1.2R or new high/low wick extension.',
+    description: 'Reversion into VWAP baseline from 2+ standard deviation bands.',
+    entry_conditions: 'Rejection wick at 2.5 VWAP deviation band.',
+    exit_conditions: 'VWAP baseline touch.',
+    stop_loss_rules: 'Fixed 1R or new high/low wick extension.',
     take_profit_rules: 'VWAP line.',
     color: '#A855F7',
     is_active: true,
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+    created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
 ]
@@ -233,189 +277,16 @@ const INITIAL_TAGS: Tag[] = [
   { id: 'tag-4', user_id: 'user-jarvis-1', name: 'Chased Price', color: '#F05265', category: 'mistake', created_at: new Date().toISOString() },
   { id: 'tag-5', user_id: 'user-jarvis-1', name: 'Trend Continuation', color: '#4095FF', category: 'setup', created_at: new Date().toISOString() },
   { id: 'tag-6', user_id: 'user-jarvis-1', name: 'Calm & Focused', color: '#18C784', category: 'emotion', created_at: new Date().toISOString() },
-  { id: 'tag-7', user_id: 'user-jarvis-1', name: 'Anxious / Rushed', color: '#EAB308', category: 'emotion', created_at: new Date().toISOString() },
 ]
 
-// Generate realistic trades spanning recent days for immediate dashboard and calendar richness
-function generateInitialTrades(): Trade[] {
-  const trades: Trade[] = []
-  const symbols = [
-    { s: 'NQ', inst: 'inst-1', class: 'futures' as const, basePrice: 20850 },
-    { s: 'ES', inst: 'inst-2', class: 'futures' as const, basePrice: 5950 },
-    { s: 'BTC/USDT', inst: 'inst-3', class: 'crypto' as const, basePrice: 91400 },
-    { s: 'XAU/USD', inst: 'inst-4', class: 'commodities' as const, basePrice: 2680 },
-    { s: 'NVDA', inst: 'inst-6', class: 'stocks' as const, basePrice: 145 },
-    { s: 'TSLA', inst: 'inst-7', class: 'stocks' as const, basePrice: 340 },
-  ]
-
-  const now = new Date()
-  let tradeIndex = 1
-
-  // Last 30 trading days
-  for (let dayOffset = 30; dayOffset >= 0; dayOffset--) {
-    const tradeDate = new Date(now)
-    tradeDate.setDate(tradeDate.getDate() - dayOffset)
-    const dayOfWeek = tradeDate.getDay()
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue // skip weekends
-
-    // 1 to 3 trades per active day
-    const tradesToday = ((dayOffset * 3) % 3) + 1
-    for (let t = 0; t < tradesToday; t++) {
-      const symInfo = symbols[(dayOffset + t) % symbols.length]
-      const isLong = (dayOffset + t) % 3 !== 0
-      const isWin = (dayOffset * 7 + t * 5) % 10 >= 3 // ~70% win rate
-      const openHour = 9 + ((t * 2) % 6)
-      const openMin = (t * 23) % 60
-      const openTime = new Date(tradeDate)
-      openTime.setHours(openHour, openMin, 0, 0)
-
-      const durationMinutes = 15 + ((dayOffset * 11 + t * 7) % 75)
-      const closeTime = new Date(openTime.getTime() + durationMinutes * 60000)
-
-      const priceVariation = (symInfo.basePrice * 0.006)
-      const entryPrice = Math.round((symInfo.basePrice + ((dayOffset % 5) - 2) * 20) * 100) / 100
-
-      let exitPrice: number
-      let stopLoss: number
-      let takeProfit: number
-
-      if (isLong) {
-        stopLoss = Math.round((entryPrice - priceVariation) * 100) / 100
-        takeProfit = Math.round((entryPrice + priceVariation * 2) * 100) / 100
-        exitPrice = isWin 
-          ? Math.round((entryPrice + priceVariation * (1.2 + (t % 3) * 0.4)) * 100) / 100
-          : Math.round((entryPrice - priceVariation * 0.95) * 100) / 100
-      } else {
-        stopLoss = Math.round((entryPrice + priceVariation) * 100) / 100
-        takeProfit = Math.round((entryPrice - priceVariation * 2) * 100) / 100
-        exitPrice = isWin 
-          ? Math.round((entryPrice - priceVariation * (1.2 + (t % 3) * 0.4)) * 100) / 100
-          : Math.round((entryPrice + priceVariation * 0.95) * 100) / 100
-      }
-
-      const quantity = symInfo.class === 'futures' ? 2 : symInfo.class === 'crypto' ? 0.5 : 100
-      const commission = symInfo.class === 'futures' ? 9.00 : symInfo.class === 'crypto' ? 3.50 : 2.00
-      const fees = 1.00
-
-      const instObj = INITIAL_INSTRUMENTS.find(i => i.id === symInfo.inst)
-      const pnlRes = calculateTradePnl({
-        direction: isLong ? 'long' : 'short',
-        entryPrice,
-        exitPrice,
-        quantity,
-        stopLoss,
-        takeProfit,
-        commission,
-        fees,
-        instrument: instObj,
-      })
-
-      const strat = INITIAL_STRATEGIES[t % INITIAL_STRATEGIES.length]
-
-      trades.push({
-        id: `trade-${tradeIndex++}`,
-        user_id: 'user-jarvis-1',
-        account_id: 'acc-1',
-        instrument_id: symInfo.inst,
-        symbol: symInfo.s,
-        asset_class: symInfo.class,
-        direction: isLong ? 'long' : 'short',
-        status: 'closed',
-        open_time: openTime.toISOString(),
-        close_time: closeTime.toISOString(),
-        quantity,
-        entry_price: entryPrice,
-        exit_price: exitPrice,
-        stop_loss: stopLoss,
-        take_profit: takeProfit,
-        gross_pnl: pnlRes.grossPnl,
-        commission: pnlRes.commission,
-        fees: pnlRes.fees,
-        net_pnl: pnlRes.netPnl,
-        roi_percentage: pnlRes.roiPercentage,
-        r_multiple: pnlRes.rMultiple,
-        strategy_id: strat.id,
-        strategy: strat,
-        setup: strat.name,
-        emotional_state: isWin ? 'Calm, patient execution' : 'Slight hesitation on entry',
-        mistakes: isWin ? [] : ['Late entry after breakout candle closed'],
-        mae: isLong ? Math.round((entryPrice - 0.3 * priceVariation) * 100) / 100 : Math.round((entryPrice + 0.3 * priceVariation) * 100) / 100,
-        mfe: isLong ? Math.round((exitPrice + 0.2 * priceVariation) * 100) / 100 : Math.round((exitPrice - 0.2 * priceVariation) * 100) / 100,
-        notes: `Followed plan strictly. Liquidity sweep occurred exactly at the key zone. Executed with 2 contracts.`,
-        market_session: openHour < 12 ? 'new_york' : 'overlap',
-        duration_minutes: durationMinutes,
-        created_at: openTime.toISOString(),
-        updated_at: closeTime.toISOString(),
-      })
-    }
-  }
-
-  return trades
-}
-
-let inMemoryTrades: Trade[] = generateInitialTrades()
+// Zero dummy trades! Clean array that only receives user-entered trades.
+let inMemoryTrades: Trade[] = []
 let inMemoryAccounts: TradingAccount[] = [...INITIAL_ACCOUNTS]
 let inMemoryStrategies: Strategy[] = [...INITIAL_STRATEGIES]
 let inMemoryTags: Tag[] = [...INITIAL_TAGS]
 let inMemoryJournals: DailyJournal[] = []
-let inMemoryBacktests: BacktestSession[] = [
-  {
-    id: 'bt-1',
-    user_id: 'user-jarvis-1',
-    name: 'NQ 15m ORB Q3 Backtest',
-    instrument_symbol: 'NQ',
-    timeframe: '15m',
-    start_date: '2026-07-01',
-    end_date: '2026-09-30',
-    strategy_id: 'strat-1',
-    initial_capital: 50000,
-    current_equity: 58420,
-    notes: 'Testing Opening Range Breakout on NQ during New York open session.',
-    is_active: true,
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
-  }
-]
-let inMemoryBacktestTrades: BacktestTrade[] = [
-  {
-    id: 'btt-1',
-    session_id: 'bt-1',
-    user_id: 'user-jarvis-1',
-    symbol: 'NQ',
-    direction: 'long',
-    entry_time: '2026-07-02T13:45:00Z',
-    exit_time: '2026-07-02T14:30:00Z',
-    entry_price: 20120,
-    exit_price: 20240,
-    quantity: 2,
-    stop_loss: 20060,
-    take_profit: 20240,
-    pnl: 2400,
-    r_multiple: 2.0,
-    result: 'win',
-    notes: 'Clean 15m candle close above initial balance range.',
-    created_at: '2026-07-02T14:30:00Z',
-  },
-  {
-    id: 'btt-2',
-    session_id: 'bt-1',
-    user_id: 'user-jarvis-1',
-    symbol: 'NQ',
-    direction: 'short',
-    entry_time: '2026-07-03T13:50:00Z',
-    exit_time: '2026-07-03T14:15:00Z',
-    entry_price: 20180,
-    exit_price: 20240,
-    quantity: 2,
-    stop_loss: 20240,
-    take_profit: 20060,
-    pnl: -1200,
-    r_multiple: -1.0,
-    result: 'loss',
-    notes: 'False breakdown trap followed by sharp rally.',
-    created_at: '2026-07-03T14:15:00Z',
-  }
-]
+let inMemoryBacktests: BacktestSession[] = []
+let inMemoryBacktestTrades: BacktestTrade[] = []
 
 let inMemoryRoutines: Routine[] = [
   {
@@ -464,11 +335,8 @@ let inMemoryRoutines: Routine[] = [
   },
 ]
 
-let inMemoryRoutineCompletions: Record<string, boolean> = {
-  [`item-1_${new Date().toISOString().split('T')[0]}`]: true,
-  [`item-2_${new Date().toISOString().split('T')[0]}`]: true,
-  [`item-3_${new Date().toISOString().split('T')[0]}`]: true,
-}
+// Zero dummy routine completions! Populates only when user checks them off.
+let inMemoryRoutineCompletions: Record<string, boolean> = {}
 
 // ==============================================================================
 // REPOSITORY / SERVICE API IMPLEMENTATIONS
@@ -550,7 +418,7 @@ export const api = {
         .order('symbol', { ascending: true })
       if (!error && data) return data
     }
-    return [...INITIAL_INSTRUMENTS]
+    return [...STANDARD_INSTRUMENTS]
   },
 
   // Strategies
@@ -613,7 +481,7 @@ export const api = {
     inMemoryStrategies = inMemoryStrategies.filter(s => s.id !== id)
   },
 
-  // Trades
+  // Trades (Dynamic real data)
   async getTrades(filters?: {
     accountId?: string
     timeRange?: TimeFilterRange
@@ -656,7 +524,7 @@ export const api = {
       if (!error && data) return data
     }
 
-    // In-memory filtered query
+    // Dynamic real data in memory
     let result = [...inMemoryTrades]
 
     if (filters?.accountId && filters.accountId !== 'all') {
@@ -682,11 +550,13 @@ export const api = {
         case 'day':
           start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
           break
-        case 'week':
-          start = new Date(now)
-          start.setDate(now.getDate() - now.getDay())
+        case 'week': {
+          const dayOfWeek = now.getDay()
+          const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+          start = new Date(now.setDate(diff))
           start.setHours(0, 0, 0, 0)
           break
+        }
         case 'month':
           start = new Date(now.getFullYear(), now.getMonth(), 1)
           break
@@ -729,6 +599,8 @@ export const api = {
 
   async createTrade(tradeData: Omit<Trade, 'id' | 'created_at' | 'updated_at'>): Promise<Trade> {
     // Financial calculation safeguard
+    const matchedInstrument = STANDARD_INSTRUMENTS.find(i => i.symbol.toUpperCase() === tradeData.symbol.toUpperCase())
+
     const calc = calculateTradePnl({
       direction: tradeData.direction,
       entryPrice: tradeData.entry_price,
@@ -738,6 +610,7 @@ export const api = {
       takeProfit: tradeData.take_profit,
       commission: tradeData.commission,
       fees: tradeData.fees,
+      instrument: matchedInstrument,
     })
 
     const payload = {
@@ -758,7 +631,7 @@ export const api = {
       return data
     }
 
-    const strat = INITIAL_STRATEGIES.find(s => s.id === tradeData.strategy_id) || null
+    const strat = inMemoryStrategies.find(s => s.id === tradeData.strategy_id) || null
     const newTrade: Trade = {
       ...payload,
       id: `trade-${Date.now()}`,
@@ -767,6 +640,13 @@ export const api = {
       updated_at: new Date().toISOString(),
     }
     inMemoryTrades.unshift(newTrade)
+
+    // Update account balance
+    const targetAccount = inMemoryAccounts.find(a => a.id === tradeData.account_id)
+    if (targetAccount) {
+      targetAccount.current_balance = Math.round((targetAccount.current_balance + calc.netPnl) * 100) / 100
+    }
+
     return newTrade
   },
 
@@ -789,6 +669,7 @@ export const api = {
 
       // Recompute financial metrics if prices changed
       if (updates.entry_price !== undefined || updates.exit_price !== undefined || updates.quantity !== undefined || updates.commission !== undefined) {
+        const matchedInst = STANDARD_INSTRUMENTS.find(i => i.symbol.toUpperCase() === updated.symbol.toUpperCase())
         const calc = calculateTradePnl({
           direction: updated.direction,
           entryPrice: updated.entry_price,
@@ -798,6 +679,7 @@ export const api = {
           takeProfit: updated.take_profit,
           commission: updated.commission,
           fees: updated.fees,
+          instrument: matchedInst,
         })
         updated.gross_pnl = calc.grossPnl
         updated.net_pnl = calc.netPnl
@@ -907,7 +789,6 @@ export const api = {
           items:routine_items(*)
         `)
       if (!error && routines) {
-        // Fetch completions for this date
         const { data: completions } = await supabase
           .from('routine_completions')
           .select('item_id, is_completed')
@@ -1016,47 +897,50 @@ export const api = {
     return newBtTrade
   },
 
-  // AI Insights Generation from user's real trading data
+  // AI Insights Generation (Strictly analyzes real user trading data)
   async generateAIInsights(trades: Trade[]): Promise<AIInsight[]> {
-    const metrics = computeDashboardMetrics(trades)
-    const insights: AIInsight[] = []
+    const closedTrades = trades.filter(t => t.status === 'closed')
 
-    if (trades.length === 0) {
-      insights.push({
-        id: 'insight-0',
-        user_id: INITIAL_PROFILE.id,
-        insight_type: 'weekly_summary',
-        title: 'Welcome to Jarvis AI Assistant',
-        summary: 'No closed trades recorded in the selected period.',
-        detailed_analysis: 'Log your first trades or import your historical CSV data to allow Jarvis AI to identify your edge, common mistakes, best sessions, and risk vulnerabilities.',
-        supporting_metrics: {},
-        recommendation: 'Click "+ Add Trade" or "CSV Import" in the Trade Log to populate your journal.',
-        is_dismissed: false,
-        created_at: new Date().toISOString(),
-      })
-      return insights
+    if (closedTrades.length === 0) {
+      return [
+        {
+          id: 'insight-empty',
+          user_id: INITIAL_PROFILE.id,
+          insight_type: 'weekly_summary',
+          title: 'Jarvis AI Ready for Live Trading Data',
+          summary: 'No closed trades recorded yet.',
+          detailed_analysis: 'Log your first trade or upload broker CSV records to activate real-time mathematical edge detection, session analysis, and mistake auditing.',
+          supporting_metrics: {},
+          recommendation: 'Use the quick "+ Add Trade" button at the top to log your first trade.',
+          is_dismissed: false,
+          created_at: new Date().toISOString(),
+        }
+      ]
     }
 
-    // 1. Win Rate & Expectancy Evaluation
-    if (metrics.winRate >= 50 && metrics.expectancy > 0) {
+    const metrics = computeDashboardMetrics(closedTrades)
+    const insights: AIInsight[] = []
+
+    // 1. Mathematical Expectancy Assessment
+    if (metrics.expectancy > 0) {
       insights.push({
-        id: `insight-1-${Date.now()}`,
+        id: `insight-exp-${Date.now()}`,
         user_id: INITIAL_PROFILE.id,
         insight_type: 'pattern',
         title: 'Positive Mathematical Expectancy Established',
         summary: `Current expectancy is +$${metrics.expectancy.toFixed(2)} per trade with a ${metrics.winRate}% win rate.`,
-        detailed_analysis: `Across ${metrics.totalTrades} closed trades, your average winning trade is +$${metrics.averageWin.toFixed(2)} compared to an average loss of -$${metrics.averageLoss.toFixed(2)}. This yields a solid profit factor of ${metrics.profitFactor}.`,
+        detailed_analysis: `Across ${metrics.totalTrades} closed trades, your average winning trade is +$${metrics.averageWin.toFixed(2)} compared to an average loss of -$${metrics.averageLoss.toFixed(2)}. Profit factor is ${metrics.profitFactor}.`,
         supporting_metrics: {
           winRate: metrics.winRate,
           expectancy: metrics.expectancy,
           profitFactor: metrics.profitFactor,
           avgR: metrics.averageR,
         },
-        recommendation: 'Maintain strict risk management. Avoid increasing position sizing until at least 50 continuous trades confirm this statistical edge.',
+        recommendation: 'Maintain strict risk management. Avoid increasing position sizing until at least 30 continuous trades confirm this statistical edge.',
         is_dismissed: false,
         created_at: new Date().toISOString(),
       })
-    } else if (metrics.expectancy < 0) {
+    } else {
       insights.push({
         id: `insight-neg-${Date.now()}`,
         user_id: INITIAL_PROFILE.id,
@@ -1076,21 +960,21 @@ export const api = {
     }
 
     // 2. Long vs Short Asymmetry Detection
-    if (metrics.longTrades > 3 && metrics.shortTrades > 3) {
+    if (metrics.longTrades >= 2 && metrics.shortTrades >= 2) {
       const diff = Math.abs(metrics.longWinRate - metrics.shortWinRate)
-      if (diff >= 20) {
+      if (diff >= 15) {
         const betterDirection = metrics.longWinRate > metrics.shortWinRate ? 'Long' : 'Short'
         const worseDirection = betterDirection === 'Long' ? 'Short' : 'Long'
         const betterRate = betterDirection === 'Long' ? metrics.longWinRate : metrics.shortWinRate
         const worseRate = betterDirection === 'Long' ? metrics.shortWinRate : metrics.longWinRate
 
         insights.push({
-          id: `insight-2-${Date.now()}`,
+          id: `insight-bias-${Date.now()}`,
           user_id: INITIAL_PROFILE.id,
           insight_type: 'strategy_analysis',
           title: `Directional Bias Asymmetry: ${betterDirection} Outperforming`,
           summary: `Your ${betterDirection} trades have a ${betterRate}% win rate vs only ${worseRate}% on ${worseDirection} trades.`,
-          detailed_analysis: `There is a significant performance discrepancy of ${diff.toFixed(1)}% between directional biases. You appear to have better psychological patience or cleaner market structure alignment when executing ${betterDirection} setups.`,
+          detailed_analysis: `Performance discrepancy of ${diff.toFixed(1)}% between directional biases. You appear to have better psychological patience or cleaner market structure alignment when executing ${betterDirection} setups.`,
           supporting_metrics: {
             longTrades: metrics.longTrades,
             longWinRate: metrics.longWinRate,
@@ -1104,42 +988,20 @@ export const api = {
       }
     }
 
-    // 3. Drawdown & Consecutive Losses Risk Analysis
-    if (metrics.consecutiveLosses >= 3) {
+    // 3. Drawdown & Streak Risk Analysis
+    if (metrics.consecutiveLosses >= 2) {
       insights.push({
-        id: `insight-3-${Date.now()}`,
+        id: `insight-streak-${Date.now()}`,
         user_id: INITIAL_PROFILE.id,
         insight_type: 'revenge_trading',
-        title: `Cluster Loss Vulnerability: ${metrics.consecutiveLosses} Consecutive Losses`,
+        title: `Consecutive Loss Cluster: ${metrics.consecutiveLosses} Losses`,
         summary: `Peak streak of ${metrics.consecutiveLosses} consecutive losses detected with max drawdown of $${metrics.maxDrawdown.toFixed(2)}.`,
-        detailed_analysis: `Analysis of trading timestamps reveals that losing streaks frequently coincide with tight trade intervals (under 20 minutes between exit and re-entry), suggesting potential emotional retaliation or tilt.`,
+        detailed_analysis: `Analysis of trading timestamps reveals that consecutive losses often occur in close proximity. A mandatory cool-off rule prevents emotional revenge trades.`,
         supporting_metrics: {
           consecutiveLosses: metrics.consecutiveLosses,
           maxDrawdown: metrics.maxDrawdown,
         },
         recommendation: 'Implement a mandatory 30-minute cool-off rule after 2 consecutive stop-outs before placing another trade.',
-        is_dismissed: false,
-        created_at: new Date().toISOString(),
-      })
-    }
-
-    // 4. Time & Session Optimization
-    const newYorkTrades = trades.filter(t => t.market_session === 'new_york')
-    const londonTrades = trades.filter(t => t.market_session === 'london')
-    if (newYorkTrades.length >= 3) {
-      const nyPnl = newYorkTrades.reduce((acc, t) => acc + (t.net_pnl || 0), 0)
-      insights.push({
-        id: `insight-4-${Date.now()}`,
-        user_id: INITIAL_PROFILE.id,
-        insight_type: 'behavior',
-        title: 'New York Session Liquidity Edge',
-        summary: `New York session trades generated $${nyPnl.toFixed(2)} total net profit across ${newYorkTrades.length} executions.`,
-        detailed_analysis: `Volatility expansion during the 09:30 - 11:30 AM EST window offers the highest setup follow-through for your breakout and FVG strategies.`,
-        supporting_metrics: {
-          nyTradeCount: newYorkTrades.length,
-          nyNetPnl: nyPnl,
-        },
-        recommendation: 'Concentrate 80% of your risk budget during the first 2 hours of the New York session.',
         is_dismissed: false,
         created_at: new Date().toISOString(),
       })

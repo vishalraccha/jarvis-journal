@@ -345,7 +345,18 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#263448] bg-[#151E2B]/50 font-tabular">
-                {paginatedTrades.map((t) => {
+                {paginatedTrades.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-12 text-center text-xs text-[#8493A8]">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Layers className="h-8 w-8 text-[#263448]" />
+                        <span className="font-semibold text-[#EAF0F8]">No trades recorded yet</span>
+                        <span className="text-[11px] text-[#8493A8]">Click "+ Add Trade" above to log your first trade or import your broker CSV</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedTrades.map((t) => {
                   const isWin = t.net_pnl > 0
                   const isLoss = t.net_pnl < 0
                   return (
@@ -422,7 +433,7 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
                       </td>
                     </tr>
                   )
-                })}
+                }))}
               </tbody>
             </table>
           </div>
@@ -457,7 +468,16 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {subView === 'day' && (
         <div className="space-y-4">
-          {dayGroups.map((group) => {
+          {dayGroups.length === 0 ? (
+            <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-12 text-center text-xs text-[#8493A8]">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Calendar className="h-8 w-8 text-[#263448]" />
+                <span className="font-semibold text-[#EAF0F8]">No trading days found</span>
+                <span className="text-[11px] text-[#8493A8]">Days will appear here chronologically as you record your executions</span>
+              </div>
+            </div>
+          ) : (
+            dayGroups.map((group) => {
             const isExpanded = Boolean(expandedDays[group.date])
             const isProfit = group.metrics.netPnl > 0
             const isLoss = group.metrics.netPnl < 0
@@ -544,7 +564,7 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
                 )}
               </div>
             )
-          })}
+          }))}
         </div>
       )}
 
@@ -553,7 +573,16 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {subView === 'week' && (
         <div className="space-y-4">
-          {weekGroups.map((group) => {
+          {weekGroups.length === 0 ? (
+            <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-12 text-center text-xs text-[#8493A8]">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Calendar className="h-8 w-8 text-[#263448]" />
+                <span className="font-semibold text-[#EAF0F8]">No weekly records found</span>
+                <span className="text-[11px] text-[#8493A8]">Weeks will appear here automatically as you log your trades</span>
+              </div>
+            </div>
+          ) : (
+            weekGroups.map((group) => {
             const isExpanded = Boolean(expandedWeeks[group.weekStart])
             const isProfit = group.metrics.netPnl > 0
             const isLoss = group.metrics.netPnl < 0
@@ -618,7 +647,7 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
                 )}
               </div>
             )
-          })}
+          }))}
         </div>
       )}
     </div>

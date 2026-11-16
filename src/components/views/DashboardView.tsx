@@ -16,6 +16,8 @@ import {
   ShieldAlert,
   Flame,
   Info,
+  Plus,
+  Sparkles,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -27,12 +29,9 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  PieChart,
-  Pie,
   Cell,
-  Legend,
 } from 'recharts'
-import { Trade, DashboardMetrics } from '@/types/database'
+import { Trade } from '@/types/database'
 import { computeDashboardMetrics } from '@/lib/calculations'
 import { formatCurrency, formatPercent, formatR } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -55,7 +54,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // State for performance calendar navigation
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
 
-  // Compute metrics based on filtered trades
+  // Compute metrics based strictly on user entered real trades
   const metrics = useMemo(() => computeDashboardMetrics(trades), [trades])
 
   // Process data for charts
@@ -100,14 +99,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       pnl: Math.round(pnl * 100) / 100,
     }))
   }, [trades])
-
-  const winLossData = useMemo(() => {
-    return [
-      { name: 'Wins', value: metrics.winningTrades, color: '#18C784' },
-      { name: 'Losses', value: metrics.losingTrades, color: '#F05265' },
-      { name: 'Breakeven', value: metrics.breakEvenTrades, color: '#8493A8' },
-    ]
-  }, [metrics])
 
   const instrumentPerformanceData = useMemo(() => {
     const map = new Map<string, { pnl: number; count: number }>()
@@ -196,7 +187,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* 1. TOP 10 KPI CARDS (TradeZella Terminal Style) */}
+      {/* Dynamic Data Notification */}
+      {trades.length === 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-[#287BFF]/30 bg-[#287BFF]/10 p-4 text-xs text-[#EAF0F8]">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="h-5 w-5 text-[#4095FF] shrink-0" />
+            <div>
+              <span className="font-bold text-[#4095FF]">Clean Dynamic Journal Active:</span>{' '}
+              All dummy data has been removed. Only real dynamic trades logged by you will be tracked and analyzed.
+            </div>
+          </div>
+          <div className="font-mono text-[11px] text-[#8493A8]">
+            Click "+ Add Trade" above to log your first trade
+          </div>
+        </div>
+      )}
+
+      {/* 1. TOP 10 KPI CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {/* Net P&L */}
         <div className={`rounded-xl border border-[#263448] bg-[#151E2B] p-4 transition-all ${
@@ -247,7 +254,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {metrics.profitFactor.toFixed(2)}
           </div>
           <div className="mt-1 text-[11px] text-[#8493A8]">
-            {metrics.profitFactor >= 2 ? 'Excellent Edge' : metrics.profitFactor >= 1.2 ? 'Healthy Edge' : 'Needs Optimization'}
+            {metrics.totalTrades === 0 ? 'No closed trades' : metrics.profitFactor >= 2 ? 'Excellent Edge' : 'Active'}
           </div>
         </div>
 
@@ -277,7 +284,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {formatR(metrics.averageR)}
           </div>
           <div className="mt-1 text-[11px] text-[#8493A8]">
-            Risk to reward realized
+            Realized return on risk
           </div>
         </div>
 
@@ -291,7 +298,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             +{formatCurrency(metrics.averageWin, currency)}
           </div>
           <div className="mt-1 text-[11px] text-[#8493A8]">
-            Across {metrics.winningTrades} winning trades
+            Across {metrics.winningTrades} wins
           </div>
         </div>
 
@@ -305,7 +312,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             -{formatCurrency(metrics.averageLoss, currency)}
           </div>
           <div className="mt-1 text-[11px] text-[#8493A8]">
-            Across {metrics.losingTrades} losing trades
+            Across {metrics.losingTrades} losses
           </div>
         </div>
 
@@ -352,7 +359,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 2. PERFORMANCE CALENDAR (Section 5) */}
+      {/* 2. PERFORMANCE CALENDAR */}
       <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-5 shadow-lg">
         {/* Calendar Header with Monthly Stats */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#263448] pb-4">
@@ -362,7 +369,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-[#EAF0F8]">Performance Calendar</h2>
-              <p className="text-xs text-[#8493A8]">Click any date to inspect trades or open Day Journal</p>
+              <p className="text-xs text-[#8493A8]">Click any date to view executions or write a 10-step Day Journal</p>
             </div>
           </div>
 
@@ -414,12 +421,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* Day Tiles */}
           <div className="grid grid-cols-7 gap-1.5">
-            {/* Blank offset tiles for first week */}
             {Array.from({ length: firstDayOfWeek }).map((_, i) => (
               <div key={`blank-${i}`} className="h-20 rounded-lg border border-transparent bg-transparent" />
             ))}
 
-            {/* Days of current month */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const dayNum = i + 1
               const dayData = calendarDaysData.get(dayNum)
@@ -474,7 +479,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 3. PERFORMANCE CHARTS GRID (Section 5) */}
+      {/* 3. PERFORMANCE CHARTS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cumulative P&L Curve */}
         <div className="rounded-xl border border-[#263448] bg-[#151E2B] p-5 shadow-lg">
@@ -484,25 +489,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {formatCurrency(metrics.netPnl, currency, true)}
             </span>
           </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={cumulativePnlData}>
-                <defs>
-                  <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#287BFF" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#287BFF" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
-                <XAxis dataKey="tradeIndex" stroke="#8493A8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
-                  formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net Cumulative P&L']}
-                />
-                <Area type="monotone" dataKey="netPnl" stroke="#287BFF" strokeWidth={2.5} fillOpacity={1} fill="url(#pnlGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full flex items-center justify-center">
+            {cumulativePnlData.length === 0 ? (
+              <span className="text-xs text-[#8493A8]">No closed trades recorded yet in this time period.</span>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={cumulativePnlData}>
+                  <defs>
+                    <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#287BFF" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#287BFF" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
+                  <XAxis dataKey="tradeIndex" stroke="#8493A8" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
+                    formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net Cumulative P&L']}
+                  />
+                  <Area type="monotone" dataKey="netPnl" stroke="#287BFF" strokeWidth={2.5} fillOpacity={1} fill="url(#pnlGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -512,23 +521,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <h3 className="text-sm font-bold text-[#EAF0F8]">Daily P&L Distribution</h3>
             <span className="text-xs text-[#8493A8]">Net profit / loss per active day</span>
           </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyPnlData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
-                <XAxis dataKey="date" stroke="#8493A8" fontSize={10} tickLine={false} />
-                <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
-                  formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net Day P&L']}
-                />
-                <Bar dataKey="pnl">
-                  {dailyPnlData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#18C784' : '#F05265'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full flex items-center justify-center">
+            {dailyPnlData.length === 0 ? (
+              <span className="text-xs text-[#8493A8]">No daily profit/loss entries recorded yet.</span>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dailyPnlData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
+                  <XAxis dataKey="date" stroke="#8493A8" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
+                    formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net Day P&L']}
+                  />
+                  <Bar dataKey="pnl">
+                    {dailyPnlData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#18C784' : '#F05265'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -538,23 +551,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <h3 className="text-sm font-bold text-[#EAF0F8]">Performance by Instrument</h3>
             <span className="text-xs text-[#8493A8]">Top symbols by Net P&L</span>
           </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={instrumentPerformanceData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#263448" horizontal={false} />
-                <XAxis type="number" stroke="#8493A8" fontSize={11} tickFormatter={(v) => `$${v}`} />
-                <YAxis type="category" dataKey="symbol" stroke="#8493A8" fontSize={11} tickLine={false} width={70} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
-                  formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net P&L']}
-                />
-                <Bar dataKey="pnl">
-                  {instrumentPerformanceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#18C784' : '#F05265'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full flex items-center justify-center">
+            {instrumentPerformanceData.length === 0 ? (
+              <span className="text-xs text-[#8493A8]">No instrument execution data yet.</span>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={instrumentPerformanceData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#263448" horizontal={false} />
+                  <XAxis type="number" stroke="#8493A8" fontSize={11} tickFormatter={(v) => `$${v}`} />
+                  <YAxis type="category" dataKey="symbol" stroke="#8493A8" fontSize={11} tickLine={false} width={70} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
+                    formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Net P&L']}
+                  />
+                  <Bar dataKey="pnl">
+                    {instrumentPerformanceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#18C784' : '#F05265'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -564,23 +581,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <h3 className="text-sm font-bold text-[#EAF0F8]">Performance by Weekday</h3>
             <span className="text-xs text-[#8493A8]">Monday through Friday edge</span>
           </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weekdayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
-                <XAxis dataKey="name" stroke="#8493A8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
-                  formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'P&L']}
-                />
-                <Bar dataKey="pnl">
-                  {weekdayData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#287BFF' : '#F05265'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full flex items-center justify-center">
+            {trades.length === 0 ? (
+              <span className="text-xs text-[#8493A8]">No weekday executions recorded yet.</span>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weekdayData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#263448" vertical={false} />
+                  <XAxis dataKey="name" stroke="#8493A8" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#8493A8" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#101722', borderColor: '#263448', borderRadius: '8px', color: '#EAF0F8' }}
+                    formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'P&L']}
+                  />
+                  <Bar dataKey="pnl">
+                    {weekdayData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#287BFF' : '#F05265'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
