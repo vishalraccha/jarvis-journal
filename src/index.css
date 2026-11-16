@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 9 13 20;
+    --foreground: 234 240 248;
+    --card: 21 30 43;
+    --card-foreground: 234 240 248;
+    --popover: 16 23 34;
+    --popover-foreground: 234 240 248;
+    --primary: 40 123 255;
+    --primary-foreground: 255 255 255;
+    --secondary: 16 23 34;
+    --secondary-foreground: 234 240 248;
+    --muted: 28 39 56;
+    --muted-foreground: 132 147 168;
+    --accent: 40 123 255;
+    --accent-foreground: 255 255 255;
+    --destructive: 240 82 101;
+    --destructive-foreground: 255 255 255;
+    --border: 38 52 72;
+    --input: 28 39 56;
+    --ring: 40 123 255;
+    --radius: 0.375rem;
+  }
+}
+
+body {
+  background-color: #090D14;
+  color: #EAF0F8;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar for sleek trading terminal UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090D14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #263448;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4095FF;
+}
+
+/* Financial terminal tabular numbers */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle glow effects for cards & metrics */
+.glow-profit {
+  box-shadow: 0 0 16px -4px rgba(24, 199, 132, 0.25);
+}
+
+.glow-loss {
+  box-shadow: 0 0 16px -4px rgba(240, 82, 101, 0.25);
+}
+
+.glow-primary {
+  box-shadow: 0 0 16px -4px rgba(40, 123, 255, 0.3);
+}
+
+/* Print Styles for Reports */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
