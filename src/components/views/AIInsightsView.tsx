@@ -27,6 +27,7 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
   const [selectedPrompt, setSelectedPrompt] = useState<string>('')
   const [customQuestion, setCustomQuestion] = useState<string>('')
   const [activeAnalysisText, setActiveAnalysisText] = useState<string | null>(null)
+  const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false)
 
   const metrics = computeDashboardMetrics(trades)
 
@@ -47,9 +48,51 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
     'What specific rule should I improve next week?',
   ]
 
-  const handleAskQuestion = (question: string) => {
+  const handleAskQuestion = async (question: string) => {
+    if (!question.trim()) return
     setSelectedPrompt(question)
-    // Synthesize factual statistical response based on actual data
+    setIsAiGenerating(true)
+    setActiveAnalysisText(null)
+
+    try {
+      const tradesSummary = trades.slice(0, 15).map(t =>
+        `${t.open_time?.slice(0,10) || ''} ${t.symbol} ${t.direction.toUpperCase()} qty:${t.quantity} PnL:$${t.net_pnl.toFixed(2)} ROI:${t.roi_percentage?.toFixed(1)}% R:${t.r_multiple?.toFixed(2)} setup:${t.setup || 'N/A'}`
+      ).join('\n')
+
+      const res = await fetch('/api/ai/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: question,
+          metrics: {
+            totalTrades: metrics.totalTrades,
+            netPnl: metrics.netPnl,
+            winRate: metrics.winRate,
+            profitFactor: metrics.profitFactor,
+            expectancy: metrics.expectancy,
+            averageWin: metrics.averageWin,
+            averageLoss: metrics.averageLoss,
+            consecutiveLosses: metrics.consecutiveLosses,
+            longWinRate: metrics.longWinRate,
+            shortWinRate: metrics.shortWinRate,
+          },
+          tradesSummary,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.text) {
+          setActiveAnalysisText(data.text)
+          setIsAiGenerating(false)
+          return
+        }
+      }
+    } catch (e) {
+      console.warn('Backend AI endpoint call failed, using statistical edge fallback:', e)
+    }
+
+    // Factual statistical response fallback
     if (question.includes('losing money')) {
       setActiveAnalysisText(
         `Based on your ${metrics.totalTrades} closed trades: Your average loss is -$${metrics.averageLoss.toFixed(2)}, which occurs primarily when exiting outside of designated stop levels. Focus on respecting initial 1R stops immediately without moving them.`
@@ -71,6 +114,7 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
         `Analysis complete: Your current win rate is ${metrics.winRate}% with a profit factor of ${metrics.profitFactor}. Maintaining disciplined trade sizing and eliminating emotional re-entries will boost your expectancy.`
       )
     }
+    setIsAiGenerating(false)
   }
 
   return (
@@ -132,13 +176,54 @@ export const AIInsightsView: React.FC<AIInsightsViewProps> = ({ trades }) => {
           ))}
         </div>
 
-        {activeAnalysisText && (
-          <div className="mt-4 rounded-lg border border-[#287BFF]/40 bg-[#101722] p-4 text-xs text-[#EAF0F8] animate-in fade-in">
-            <div className="flex items-center gap-2 text-[#4095FF] font-semibold mb-1">
+        {/* Custom Question Input */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (customQuestion.trim()) {
+              handleAskQuestion(customQuestion)
+              setCustomQuestion('')
+            }
+          }}
+          className="mt-3 flex items-center gap-2"
+        >
+          <input
+            type="text"
+            placeholder="Ask Jarvis AI a specific question about your trading..."
+            value={customQuestion}
+            onChange={(e) => setCustomQuestion(e.target.value)}
+            className="flex-1 rounded-lg border border-[#202838] bg-[#10141E] px-3 py-2 text-xs text-[#E2E8F0] placeholder-[#8493A8] focus:border-[var(--accent-color)] focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={isAiGenerating || !customQuestion.trim()}
+            style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+            className="rounded-lg px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
+          >
+            Ask AI
+          </button>
+        </form>
+
+        {isAiGenerating && (
+          <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#202838] bg-[#10141E] p-4 text-xs text-[#8493A8] animate-pulse">
+            <Brain className="h-4 w-4 animate-spin text-[var(--accent-color)]" />
+            <span>JARVIS AI is auditing your real trading executions with Gemini...</span>
+          </div>
+        )}
+
+        {activeAnalysisText && !isAiGenerating && (
+          <div
+            style={{
+              borderColor: 'var(--accent-border, rgba(59,130,246,0.4))',
+              backgroundColor: '#10141E',
+            }}
+            className="mt-4 rounded-lg border p-4 text-xs animate-in fade-in"
+          >
+            <div className="flex items-center gap-2 font-semibold mb-1" style={{ color: 'var(--accent-color, #3B82F6)' }}>
               <Brain className="h-4 w-4" />
               <span>Jarvis Analysis for "{selectedPrompt}"</span>
             </div>
-            <p className="mt-1 leading-relaxed text-[#8493A8]">{activeAnalysisText}</p>
+            <p className="mt-1 leading-relaxed text-[#E2E8F0] whitespace-pre-line">{activeAnalysisText}</p>
           </div>
         )}
       </div>
