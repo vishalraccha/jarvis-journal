@@ -242,7 +242,7 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
         </div>
 
         {/* Action Buttons: Import, Export, Add Trade */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#8493A8]" />
             <input
@@ -321,7 +321,7 @@ export const TradeLogView: React.FC<TradeLogViewProps> = ({
 
           {/* Main Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[800px]">
               <thead className="border-b border-[#263448] bg-[#101722] text-[#8493A8] uppercase tracking-wider font-semibold text-[10px]">
                 <tr>
                   <th className="py-3 px-4 cursor-pointer" onClick={() => handleSort('open_time')}>

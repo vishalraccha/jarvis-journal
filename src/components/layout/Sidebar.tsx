@@ -17,6 +17,7 @@ import {
   Settings,
   ShieldCheck,
   ChevronRight,
+  X,
 } from 'lucide-react'
 
 export type NavTab = 
@@ -122,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Brand Header */}
-        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="flex h-16 shrink-0 items-center justify-between border-b px-5">
+        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="flex h-16 shrink-0 items-center justify-between border-b px-4 sm:px-5">
           <div className="flex items-center gap-3">
             <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-[#141A26] border border-[#202838] font-mono text-sm font-bold text-[#E2E8F0] shadow-sm">
               JJ
@@ -138,6 +139,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </p>
             </div>
           </div>
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 text-[#8493A8] hover:text-[#E2E8F0] rounded-lg border border-[#202838] bg-[#141A26] lg:hidden"
+            title="Close Menu"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Navigation Items */}

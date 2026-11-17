@@ -5,21 +5,15 @@ import {
   Wallet,
   Coins,
   Plus,
-  Bell,
   ChevronDown,
-  Database,
-  CheckCircle2,
-  User,
-  LogOut,
-  ExternalLink,
-  Palette,
+  Check,
   Power,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
-import { useTheme, THEMES, AppTheme } from '@/context/ThemeContext'
 import { useSecurity } from '@/context/SecurityContext'
 import { TimeFilterRange } from '@/types/database'
+import { formatCurrency } from '@/lib/utils'
 
 interface TopbarProps {
   onOpenMobileSidebar: () => void
@@ -32,14 +26,16 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenAddTrade,
   onOpenSettings,
 }) => {
-  const { profile, accounts, activeAccount, setActiveAccount, currency, setCurrency, isSupabaseConnected, logout } = useAuth()
+  const { accounts, activeAccount, setActiveAccount, currency, setCurrency, isSupabaseConnected } = useAuth()
   const { timeRange, setTimeRange, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate } = useFilter()
-  const { theme, setTheme } = useTheme()
   const { lock } = useSecurity()
 
   const [showCustomDates, setShowCustomDates] = useState(false)
   const [showAccountMenu, setShowAccountMenu] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
+
+  const currentBalance = activeAccount
+    ? activeAccount.current_balance
+    : accounts.reduce((sum, a) => sum + (a.current_balance || 0), 0)
 
   const timeFilterOptions: { id: TimeFilterRange; label: string }[] = [
     { id: 'day', label: 'Day' },
@@ -55,30 +51,27 @@ export const Topbar: React.FC<TopbarProps> = ({
   return (
     <header
       style={{ backgroundColor: 'var(--bg-surface, #10141E)', borderColor: 'var(--border-color, #202838)' }}
-      className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur-md lg:px-6"
+      className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-2 sm:px-4 lg:px-6 backdrop-blur-md"
     >
-      {/* Left Area: Mobile Toggle & Global Date Filter */}
-      <div className="flex items-center gap-3">
+      {/* Left Area: Mobile Drawer Toggle & Global Date Filter */}
+      <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
         <button
           onClick={onOpenMobileSidebar}
           style={{ borderColor: 'var(--border-color, #202838)' }}
-          className="rounded-md border bg-[#141A26] p-2 text-[#8493A8] hover:text-[#E2E8F0] lg:hidden"
+          className="rounded-lg border bg-[#141A26] p-2 text-[#8493A8] hover:text-[#E2E8F0] lg:hidden shrink-0"
+          title="Open Navigation Menu"
         >
           <Menu className="h-4 w-4" />
         </button>
 
-        {/* Global Time Filter Pills */}
-        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="hidden items-center gap-1 rounded-lg border bg-[#141A26]/80 p-1 sm:flex">
+        {/* Desktop Global Time Filter Pills */}
+        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="hidden sm:flex items-center gap-1 rounded-lg border bg-[#141A26]/80 p-1">
           {timeFilterOptions.map((opt) => (
             <button
               key={opt.id}
               onClick={() => {
                 setTimeRange(opt.id)
-                if (opt.id === 'custom') {
-                  setShowCustomDates(true)
-                } else {
-                  setShowCustomDates(false)
-                }
+                setShowCustomDates(opt.id === 'custom')
               }}
               style={{
                 backgroundColor: timeRange === opt.id ? 'var(--accent-color, #3B82F6)' : undefined,
@@ -94,9 +87,29 @@ export const Topbar: React.FC<TopbarProps> = ({
           ))}
         </div>
 
+        {/* Mobile Global Time Filter Dropdown */}
+        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="flex sm:hidden items-center rounded-lg border bg-[#141A26] px-2 py-1 text-xs">
+          <Calendar className="mr-1 h-3.5 w-3.5 text-[#8493A8]" />
+          <select
+            value={timeRange}
+            onChange={(e) => {
+              const val = e.target.value as TimeFilterRange
+              setTimeRange(val)
+              setShowCustomDates(val === 'custom')
+            }}
+            className="bg-transparent font-medium text-xs text-[#E2E8F0] focus:outline-none cursor-pointer"
+          >
+            {timeFilterOptions.map((opt) => (
+              <option key={opt.id} value={opt.id} className="bg-[#141A26] text-[#E2E8F0]">
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Custom Date Range Popover/Inputs */}
         {timeRange === 'custom' && (
-          <div style={{ borderColor: 'var(--border-color, #202838)' }} className="flex items-center gap-2 rounded-lg border bg-[#141A26] px-2.5 py-1 text-xs">
+          <div style={{ borderColor: 'var(--border-color, #202838)' }} className="hidden md:flex items-center gap-2 rounded-lg border bg-[#141A26] px-2.5 py-1 text-xs">
             <span className="text-[#8493A8]">From:</span>
             <input
               type="date"
@@ -115,89 +128,96 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      {/* Right Area: Account, Currency, Quick Add Trade, Profile */}
-      <div className="flex items-center gap-2.5">
-        {/* Account Selector */}
+      {/* Right Area: Account, Currency, Quick Add Trade, Power Off */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Account Selector & Balance */}
         <div className="relative">
           <button
             onClick={() => setShowAccountMenu(!showAccountMenu)}
             style={{ borderColor: 'var(--border-color, #202838)' }}
-            className="flex items-center gap-2 rounded-lg border bg-[#141A26] px-3 py-1.5 text-xs text-[#E2E8F0] hover:border-[#3B82F6]/50 transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2.5 rounded-lg border bg-[#141A26] px-2 sm:px-3 py-1.5 text-xs text-[#E2E8F0] hover:border-[#3B82F6]/50 transition-colors cursor-pointer"
+            title={`Selected: ${activeAccount?.name || 'All Accounts'} (Balance: ${formatCurrency(currentBalance, activeAccount?.currency || currency)})`}
           >
-            <Wallet className="h-3.5 w-3.5 text-[#3B82F6]" />
-            <span className="max-w-[130px] truncate font-medium">
-              {activeAccount?.name || 'All Accounts'}
-            </span>
-            <ChevronDown className="h-3 w-3 text-[#8493A8]" />
+            <Wallet className="h-3.5 w-3.5 text-[#3B82F6] shrink-0" />
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+              <span className="max-w-[65px] sm:max-w-[110px] truncate font-medium text-[#E2E8F0]">
+                {activeAccount?.name || 'All Accounts'}
+              </span>
+              <span className="text-[#8493A8] text-[10px]">•</span>
+              <span className="font-mono font-bold text-[#18C784] text-xs shrink-0">
+                {formatCurrency(currentBalance, activeAccount?.currency || currency)}
+              </span>
+            </div>
+            <ChevronDown className="h-3 w-3 text-[#8493A8] shrink-0" />
           </button>
 
           {showAccountMenu && (
             <div
-              className="absolute right-0 mt-1.5 w-60 rounded-lg border border-[#263448] bg-[#151E2B] p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100"
-              onClick={() => setShowAccountMenu(false)}
+              style={{ borderColor: 'var(--border-color, #202838)' }}
+              className="absolute right-0 mt-1.5 w-64 rounded-lg border bg-[#141A26] p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100"
             >
-              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8493A8]">
-                Select Trading Account
+              <div className="px-2.5 py-1.5 text-[10px] font-semibold tracking-wider text-[#8493A8] uppercase">
+                Switch Trading Account
               </div>
-              <button
-                onClick={() => setActiveAccount(null)}
-                className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs text-left ${
-                  !activeAccount ? 'bg-[#287BFF]/20 text-[#4095FF] font-medium' : 'text-[#8493A8] hover:bg-[#101722] hover:text-[#EAF0F8]'
-                }`}
-              >
-                <span>Consolidated (All Accounts)</span>
-              </button>
-              {accounts.map((acc) => (
+              <div className="space-y-0.5">
                 <button
-                  key={acc.id}
-                  onClick={() => setActiveAccount(acc)}
-                  className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs text-left ${
-                    activeAccount?.id === acc.id
-                      ? 'bg-[#287BFF]/20 text-[#4095FF] font-medium'
-                      : 'text-[#8493A8] hover:bg-[#101722] hover:text-[#EAF0F8]'
+                  onClick={() => {
+                    setActiveAccount(null)
+                    setShowAccountMenu(false)
+                  }}
+                  className={`flex w-full items-center justify-between rounded px-2.5 py-2 text-xs transition-colors ${
+                    activeAccount === null
+                      ? 'bg-[#202838] text-white font-medium'
+                      : 'text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]'
                   }`}
                 >
-                  <div className="truncate">
-                    <div className="font-medium text-[#EAF0F8] truncate">{acc.name}</div>
-                    <div className="text-[10px] text-[#8493A8] capitalize">{acc.account_type} • {acc.currency}</div>
+                  <div className="flex flex-col text-left">
+                    <span className="font-medium text-[#E2E8F0]">All Accounts (Combined)</span>
+                    <span className="font-mono text-[10px] text-[#8493A8]">
+                      Total Balance: {formatCurrency(accounts.reduce((sum, a) => sum + (a.current_balance || 0), 0), currency)}
+                    </span>
                   </div>
-                  <span className="font-mono text-xs font-semibold text-[#18C784]">
-                    ${acc.current_balance.toLocaleString()}
-                  </span>
+                  {activeAccount === null && <Check className="h-3.5 w-3.5 text-[#18C784]" />}
                 </button>
-              ))}
+                {accounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    onClick={() => {
+                      setActiveAccount(acc)
+                      setShowAccountMenu(false)
+                    }}
+                    className={`flex w-full items-center justify-between rounded px-2.5 py-2 text-xs transition-colors ${
+                      activeAccount?.id === acc.id
+                        ? 'bg-[#202838] text-white font-medium'
+                        : 'text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]'
+                    }`}
+                  >
+                    <div className="flex flex-col text-left">
+                      <span className="font-medium text-[#E2E8F0]">{acc.name}</span>
+                      <span className="font-mono text-[10px] text-[#8493A8]">
+                        {acc.broker || acc.account_type.toUpperCase()} • <span className="text-[#18C784] font-semibold">{formatCurrency(acc.current_balance, acc.currency || currency)}</span>
+                      </span>
+                    </div>
+                    {activeAccount?.id === acc.id && (
+                      <Check className="h-3.5 w-3.5 text-[#18C784]" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Theme Selector */}
-        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="hidden lg:flex items-center rounded-lg border bg-[#141A26] px-2 py-1 text-xs">
-          <Palette className="mr-1.5 h-3.5 w-3.5" style={{ color: 'var(--accent-color, #3B82F6)' }} />
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value as AppTheme)}
-            className="bg-transparent font-medium text-xs text-[#E2E8F0] focus:outline-none cursor-pointer"
-          >
-            <option value="blue" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Blue</option>
-            <option value="green" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Green</option>
-            <option value="orange" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Orange</option>
-            <option value="yellow" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Yellow</option>
-            <option value="charcoal" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey Monochrome</option>
-            <option value="cyan" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Cyan</option>
-            <option value="purple" className="bg-[#141A26] text-[#E2E8F0]">Dark Grey & Purple</option>
-          </select>
-        </div>
-
         {/* Currency Selector */}
-        <div className="hidden md:flex items-center rounded-lg border border-[#263448] bg-[#101722] px-2 py-1 text-xs">
+        <div style={{ borderColor: 'var(--border-color, #202838)' }} className="hidden md:flex items-center rounded-lg border bg-[#141A26] px-2 py-1 text-xs">
           <Coins className="mr-1.5 h-3.5 w-3.5 text-[#8493A8]" />
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className="bg-transparent font-mono text-xs text-[#EAF0F8] focus:outline-none cursor-pointer"
+            className="bg-transparent font-mono text-xs text-[#E2E8F0] focus:outline-none cursor-pointer"
           >
             {currencies.map((c) => (
-              <option key={c} value={c} className="bg-[#151E2B] text-[#EAF0F8]">
+              <option key={c} value={c} className="bg-[#141A26] text-[#E2E8F0]">
                 {c}
               </option>
             ))}
@@ -208,7 +228,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         <div
           title={isSupabaseConnected ? 'Connected to live Supabase PostgreSQL' : 'Local In-Memory Engine Active. Ready for Supabase link.'}
           style={{ borderColor: 'var(--border-color, #202838)' }}
-          className="hidden sm:flex items-center gap-1.5 rounded-full border bg-[#141A26] px-2.5 py-1 text-[11px] text-[#8493A8]"
+          className="hidden lg:flex items-center gap-1.5 rounded-full border bg-[#141A26] px-2.5 py-1 text-[11px] text-[#8493A8]"
         >
           <span className={`h-2 w-2 rounded-full ${isSupabaseConnected ? 'bg-[#18C784]' : 'bg-[#3B82F6]'}`} />
           <span className="font-mono text-[10px]">
@@ -220,70 +240,24 @@ export const Topbar: React.FC<TopbarProps> = ({
         <button
           onClick={onOpenAddTrade}
           style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
-          className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all cursor-pointer"
+          className="flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Add Trade</span>
         </button>
 
-        {/* Profile Avatar / Menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            style={{ borderColor: 'var(--border-color, #202838)' }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border bg-[#141A26] text-[#8493A8] hover:text-[#E2E8F0] transition-colors"
-          >
-            <User className="h-4 w-4 text-[#3B82F6]" />
-          </button>
-
-          {showUserMenu && (
-            <div
-              style={{ borderColor: 'var(--border-color, #202838)' }}
-              className="absolute right-0 mt-1.5 w-52 rounded-lg border bg-[#141A26] p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100"
-              onClick={() => setShowUserMenu(false)}
-            >
-              <div style={{ borderColor: 'var(--border-color, #202838)' }} className="border-b px-3 py-2">
-                <div className="text-xs font-semibold text-[#E2E8F0]">{profile?.full_name || 'Jarvis Trader'}</div>
-                <div className="text-[10px] text-[#8493A8] truncate">@{profile?.username || 'trader'}</div>
-              </div>
-              <div className="py-1">
-                <button
-                  onClick={onOpenSettings}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  <span>Profile & Settings</span>
-                </button>
-                <button
-                  onClick={() => logout()}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[#8493A8] hover:bg-[#10141E] hover:text-[#E2E8F0]"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span>Sign Out</span>
-                </button>
-                <button
-                  onClick={() => lock()}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[#F05265] hover:bg-[#F05265]/10 font-medium"
-                >
-                  <Power className="h-3.5 w-3.5" />
-                  <span>Power Off (Lock)</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Manual Power Off Button */}
         <button
           onClick={() => {
-            if (confirm('Power off Jarvis Journal and lock session?')) {
+            if (confirm('Power off Jarvis Journal and terminate 12-hour session?')) {
               lock()
             }
           }}
-          title="Manual Power Off / Terminate Session"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 text-[#F05265] hover:bg-[#F05265] hover:text-white transition-all shadow-sm cursor-pointer"
+          title="Manual Power Off (Lock Terminal Session)"
+          className="flex items-center gap-1.5 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 px-2 sm:px-2.5 py-1.5 text-xs font-bold text-[#F05265] hover:bg-[#F05265] hover:text-white transition-all shadow-sm cursor-pointer"
         >
-          <Power className="h-4 w-4" />
+          <Power className="h-3.5 w-3.5" />
+          <span className="hidden md:inline text-[11px]">Power Off</span>
         </button>
       </div>
     </header>

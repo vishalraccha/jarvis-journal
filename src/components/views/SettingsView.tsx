@@ -14,6 +14,10 @@ import {
   Coins,
   Shield,
   X,
+  AlertCircle,
+  Copy,
+  ExternalLink,
+  RefreshCw,
 } from 'lucide-react'
 import { TradingAccount, Instrument, Tag, AccountType, AssetClass } from '@/types/database'
 import { api } from '@/services/api'
@@ -59,6 +63,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [accBroker, setAccBroker] = useState('')
   const [accBalance, setAccBalance] = useState(10000)
   const [accCurrency, setAccCurrency] = useState('USD')
+  const [isSubmittingAccount, setIsSubmittingAccount] = useState(false)
+  const [accountError, setAccountError] = useState<string | null>(null)
+  const [accountSuccess, setAccountSuccess] = useState<string | null>(null)
 
   // --- INSTRUMENTS STATE ---
   const [instruments, setInstruments] = useState<Instrument[]>([])
@@ -71,6 +78,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [instPointValue, setInstPointValue] = useState(20.0)
   const [instContractSize, setInstContractSize] = useState(1.0)
   const [instCommission, setInstCommission] = useState(2.25)
+  const [isSubmittingInstrument, setIsSubmittingInstrument] = useState(false)
+  const [instrumentError, setInstrumentError] = useState<string | null>(null)
+  const [instrumentSuccess, setInstrumentSuccess] = useState<string | null>(null)
 
   // --- TAGS STATE ---
   const [tags, setTags] = useState<Tag[]>([])
@@ -79,13 +89,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [tagName, setTagName] = useState('')
   const [tagCategory, setTagCategory] = useState<'setup' | 'mistake' | 'emotion' | 'market_condition' | 'general'>('setup')
   const [tagColor, setTagColor] = useState('#3B82F6')
+  const [isSubmittingTag, setIsSubmittingTag] = useState(false)
+  const [tagError, setTagError] = useState<string | null>(null)
+  const [tagSuccess, setTagSuccess] = useState<string | null>(null)
+
+  // --- DATABASE HEALTH STATE ---
+  const [dbHealth, setDbHealth] = useState<{ isConnected: boolean; tablesExist: boolean; error?: string } | null>(null)
+  const [isProbingDb, setIsProbingDb] = useState(false)
+  const [hasCopiedSql, setHasCopiedSql] = useState(false)
 
   // Load data
   const loadData = async () => {
-    const insts = await api.getInstruments()
-    setInstruments(insts)
-    const tgs = await api.getTags()
-    setTags(tgs)
+    try {
+      const insts = await api.getInstruments()
+      setInstruments(insts)
+      const tgs = await api.getTags()
+      setTags(tgs)
+      checkDbHealth()
+    } catch (err) {
+      console.error('Error loading settings data:', err)
+    }
+  }
+
+  const checkDbHealth = async () => {
+    setIsProbingDb(true)
+    try {
+      const health = await api.checkDatabaseHealth()
+      setDbHealth(health)
+    } finally {
+      setIsProbingDb(false)
+    }
   }
 
   useEffect(() => {
@@ -95,23 +128,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // --- ACCOUNT HANDLERS ---
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!accName.trim()) return
+    if (!accName.trim()) {
+      setAccountError('Account name is required.')
+      return
+    }
 
-    await api.createTradingAccount({
-      user_id: 'user-jarvis-1',
-      name: accName,
-      account_type: accType,
-      broker: accBroker || null,
-      initial_balance: Number(accBalance),
-      current_balance: Number(accBalance),
-      currency: accCurrency,
-      is_default: accounts.length === 0,
-      is_active: true,
-    })
+    setIsSubmittingAccount(true)
+    setAccountError(null)
+    setAccountSuccess(null)
 
-    setIsAccountModalOpen(false)
-    setAccName('')
-    await reloadAccounts()
+    try {
+      const newAcc = await api.createTradingAccount({
+        user_id: 'user-jarvis-1',
+        name: accName.trim(),
+        account_type: accType,
+        broker: accBroker.trim() || null,
+        initial_balance: Number(accBalance) || 0,
+        current_balance: Number(accBalance) || 0,
+        currency: accCurrency,
+        is_default: accounts.length === 0,
+        is_active: true,
+      })
+
+      setAccountSuccess(`Account "${newAcc.name}" created successfully!`)
+      await reloadAccounts()
+
+      setTimeout(() => {
+        setIsAccountModalOpen(false)
+        setAccName('')
+        setAccBroker('')
+        setAccountSuccess(null)
+        setIsSubmittingAccount(false)
+      }, 500)
+    } catch (err: any) {
+      console.error('Error creating trading account:', err)
+      setAccountError(err.message || 'An error occurred while creating the trading account.')
+      setIsSubmittingAccount(false)
+    }
   }
 
   const handleDeleteAccount = async (id: string, name: string) => {
@@ -124,24 +177,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // --- INSTRUMENT HANDLERS ---
   const handleCreateInstrument = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!instSymbol.trim() || !instName.trim()) return
+    if (!instSymbol.trim() || !instName.trim()) {
+      setInstrumentError('Symbol and full instrument name are required.')
+      return
+    }
 
-    const newInst = await api.createInstrument({
-      symbol: instSymbol.toUpperCase().trim(),
-      name: instName.trim(),
-      asset_class: instAssetClass,
-      tick_size: Number(instTickSize),
-      tick_value: Number(instTickValue),
-      point_value: Number(instPointValue),
-      contract_size: Number(instContractSize),
-      default_commission: Number(instCommission),
-      currency: 'USD',
-    })
+    setIsSubmittingInstrument(true)
+    setInstrumentError(null)
+    setInstrumentSuccess(null)
 
-    setInstruments(prev => [...prev, newInst])
-    setIsInstrumentModalOpen(false)
-    setInstSymbol('')
-    setInstName('')
+    try {
+      const newInst = await api.createInstrument({
+        symbol: instSymbol.toUpperCase().trim(),
+        name: instName.trim(),
+        asset_class: instAssetClass,
+        tick_size: Number(instTickSize) || 0.01,
+        tick_value: Number(instTickValue) || 1.0,
+        point_value: Number(instPointValue) || 1.0,
+        contract_size: Number(instContractSize) || 1.0,
+        default_commission: Number(instCommission) || 0.0,
+        currency: 'USD',
+      })
+
+      setInstruments(prev => [...prev, newInst])
+      setInstrumentSuccess(`Instrument "${newInst.symbol}" added successfully!`)
+
+      setTimeout(() => {
+        setIsInstrumentModalOpen(false)
+        setInstSymbol('')
+        setInstName('')
+        setInstrumentSuccess(null)
+        setIsSubmittingInstrument(false)
+      }, 500)
+    } catch (err: any) {
+      console.error('Error creating instrument:', err)
+      setInstrumentError(err.message || 'Failed to create instrument.')
+      setIsSubmittingInstrument(false)
+    }
   }
 
   const handleDeleteInstrument = async (id: string, sym: string) => {
@@ -154,18 +226,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // --- TAG HANDLERS ---
   const handleCreateTag = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!tagName.trim()) return
+    if (!tagName.trim()) {
+      setTagError('Tag name is required.')
+      return
+    }
 
-    const newT = await api.createTag({
-      user_id: 'user-jarvis-1',
-      name: tagName.trim(),
-      category: tagCategory,
-      color: tagColor,
-    })
+    setIsSubmittingTag(true)
+    setTagError(null)
+    setTagSuccess(null)
 
-    setTags(prev => [...prev, newT])
-    setIsTagModalOpen(false)
-    setTagName('')
+    try {
+      const newT = await api.createTag({
+        user_id: 'user-jarvis-1',
+        name: tagName.trim(),
+        category: tagCategory,
+        color: tagColor,
+      })
+
+      setTags(prev => [...prev, newT])
+      setTagSuccess(`Tag "${newT.name}" created successfully!`)
+
+      setTimeout(() => {
+        setIsTagModalOpen(false)
+        setTagName('')
+        setTagSuccess(null)
+        setIsSubmittingTag(false)
+      }, 500)
+    } catch (err: any) {
+      console.error('Error creating tag:', err)
+      setTagError(err.message || 'Failed to create tag.')
+      setIsSubmittingTag(false)
+    }
   }
 
   const handleDeleteTag = async (id: string, name: string) => {
@@ -566,33 +657,123 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           {/* SUPABASE CONNECTION STATUS */}
           <div className="rounded-xl border border-[#202838] bg-[#141A26] p-6 shadow-lg space-y-4">
-            <div className="flex items-center justify-between border-b border-[#202838] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202838] pb-3">
               <div className="flex items-center gap-2.5">
                 <Database className="h-5 w-5 text-[#3B82F6]" />
                 <div>
-                  <h3 className="text-sm font-bold text-[#E2E8F0]">Supabase PostgreSQL Synchronization</h3>
-                  <p className="text-xs text-[#8493A8]">Row Level Security (RLS) encrypted database connection</p>
+                  <h3 className="text-sm font-bold text-[#E2E8F0]">Supabase PostgreSQL Cloud Database</h3>
+                  <p className="text-xs text-[#8493A8]">Row-Level Security (RLS) encrypted database connection</p>
                 </div>
               </div>
-              <span
-                className={`rounded-full px-3 py-1 font-mono text-xs font-bold ${
-                  isSupabaseConfigured
-                    ? 'bg-[#18C784]/15 text-[#18C784] border border-[#18C784]/30'
-                    : 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30'
-                }`}
-              >
-                {isSupabaseConfigured ? 'CONNECTED' : 'LOCAL ENGINE READY'}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={checkDbHealth}
+                  disabled={isProbingDb}
+                  className="flex items-center gap-1.5 rounded-lg border border-[#202838] bg-[#10141E] px-2.5 py-1 text-xs text-[#8493A8] hover:text-[#E2E8F0] transition-colors"
+                  title="Re-check Supabase database connection and tables"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isProbingDb ? 'animate-spin text-[#3B82F6]' : ''}`} />
+                  <span>{isProbingDb ? 'Checking...' : 'Check Status'}</span>
+                </button>
+                <span
+                  className={`rounded-full px-3 py-1 font-mono text-xs font-bold border ${
+                    dbHealth?.tablesExist
+                      ? 'bg-[#18C784]/15 text-[#18C784] border-[#18C784]/30'
+                      : isSupabaseConfigured
+                      ? 'bg-[#EAB308]/15 text-[#EAB308] border-[#EAB308]/30'
+                      : 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30'
+                  }`}
+                >
+                  {dbHealth?.tablesExist
+                    ? 'CONNECTED & TABLES LIVE'
+                    : isSupabaseConfigured
+                    ? 'LINKED (TABLES SETUP PENDING)'
+                    : 'LOCAL ENGINE READY'}
+                </span>
+              </div>
             </div>
+
+            {/* If tables are missing, provide clear notice and 1-click copy SQL script */}
+            {isSupabaseConfigured && !dbHealth?.tablesExist && (
+              <div className="rounded-lg border border-[#EAB308]/30 bg-[#EAB308]/10 p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 text-[#EAB308] shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-[#EAF0F8]">
+                      Database Tables Pending in Your Supabase Project
+                    </p>
+                    <p className="text-[11px] text-[#CBD5E1] leading-relaxed">
+                      Your Supabase credentials (<span className="font-mono text-[#EAB308]">hclxoemiitxjzvlvvbci</span>) are configured, but the database tables have not been created in Supabase yet. Current trades and accounts run seamlessly in your local terminal session.
+                    </p>
+                    <p className="text-[11px] text-[#8493A8]">
+                      To activate permanent cloud sync, copy the 1-click setup SQL below, paste it into your Supabase SQL Editor, and click <strong>Run</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const sql = `-- JARVIS JOURNAL DIRECT SETUP
+CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+
+CREATE TABLE IF NOT EXISTS public.profiles (id TEXT PRIMARY KEY DEFAULT 'user-jarvis-1', username TEXT DEFAULT 'trader', full_name TEXT DEFAULT 'Jarvis Trader', avatar_url TEXT, base_currency TEXT DEFAULT 'USD' NOT NULL, timezone TEXT DEFAULT 'America/New_York' NOT NULL, onboarding_completed BOOLEAN DEFAULT true NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL);
+INSERT INTO public.profiles (id, username, full_name, base_currency, timezone, onboarding_completed) VALUES ('user-jarvis-1', 'trader', 'Jarvis Trader', 'USD', 'America/New_York', true) ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS public.trading_accounts (id TEXT PRIMARY KEY DEFAULT ('acc-' || extract(epoch from now())::bigint), user_id TEXT NOT NULL DEFAULT 'user-jarvis-1', name TEXT NOT NULL, account_type TEXT NOT NULL DEFAULT 'live', broker TEXT, initial_balance NUMERIC(16, 2) NOT NULL DEFAULT 10000.00, current_balance NUMERIC(16, 2) NOT NULL DEFAULT 10000.00, currency TEXT NOT NULL DEFAULT 'USD', is_default BOOLEAN NOT NULL DEFAULT false, is_active BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL);
+INSERT INTO public.trading_accounts (id, user_id, name, account_type, broker, initial_balance, current_balance, currency, is_default, is_active) VALUES ('acc-1', 'user-jarvis-1', 'Primary Trading Account', 'live', 'Live Brokerage', 10000.00, 10000.00, 'USD', true, true) ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS public.instruments (id TEXT PRIMARY KEY DEFAULT ('inst-' || extract(epoch from now())::bigint), user_id TEXT DEFAULT 'user-jarvis-1', symbol TEXT NOT NULL, name TEXT NOT NULL, asset_class TEXT NOT NULL DEFAULT 'futures', tick_size NUMERIC(18, 8) NOT NULL DEFAULT 0.01, tick_value NUMERIC(18, 8) NOT NULL DEFAULT 1.00, contract_size NUMERIC(18, 8) NOT NULL DEFAULT 1.00, point_value NUMERIC(18, 8) NOT NULL DEFAULT 1.00, default_commission NUMERIC(16, 4) NOT NULL DEFAULT 0.00, currency TEXT NOT NULL DEFAULT 'USD', created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL);
+
+CREATE TABLE IF NOT EXISTS public.strategies (id TEXT PRIMARY KEY DEFAULT ('strat-' || extract(epoch from now())::bigint), user_id TEXT NOT NULL DEFAULT 'user-jarvis-1', name TEXT NOT NULL, description TEXT, entry_conditions TEXT, exit_conditions TEXT, stop_loss_rules TEXT, take_profit_rules TEXT, screenshot_url TEXT, color TEXT DEFAULT '#3B82F6', is_active BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL);
+
+CREATE TABLE IF NOT EXISTS public.tags (id TEXT PRIMARY KEY DEFAULT ('tag-' || extract(epoch from now())::bigint), user_id TEXT NOT NULL DEFAULT 'user-jarvis-1', name TEXT NOT NULL, color TEXT DEFAULT '#3B82F6' NOT NULL, category TEXT NOT NULL DEFAULT 'setup', created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL);
+
+CREATE TABLE IF NOT EXISTS public.trades (id TEXT PRIMARY KEY DEFAULT ('trade-' || extract(epoch from now())::bigint), user_id TEXT NOT NULL DEFAULT 'user-jarvis-1', account_id TEXT NOT NULL, instrument_id TEXT, symbol TEXT NOT NULL, asset_class TEXT NOT NULL DEFAULT 'futures', direction TEXT NOT NULL DEFAULT 'long', status TEXT NOT NULL DEFAULT 'closed', open_time TIMESTAMPTZ NOT NULL, close_time TIMESTAMPTZ, quantity NUMERIC(18, 6) NOT NULL DEFAULT 1, entry_price NUMERIC(18, 6) NOT NULL, exit_price NUMERIC(18, 6), stop_loss NUMERIC(18, 6), take_profit NUMERIC(18, 6), gross_pnl NUMERIC(16, 2) DEFAULT 0.00, commission NUMERIC(16, 2) DEFAULT 0.00, fees NUMERIC(16, 2) DEFAULT 0.00, net_pnl NUMERIC(16, 2) DEFAULT 0.00, roi_percentage NUMERIC(10, 4) DEFAULT 0.00, r_multiple NUMERIC(10, 4), strategy_id TEXT, setup TEXT, notes TEXT, emotional_state TEXT, mistakes TEXT[] DEFAULT '{}', mae NUMERIC(18, 6), mfe NUMERIC(18, 6), market_session TEXT, duration_minutes INT, created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL);
+
+CREATE TABLE IF NOT EXISTS public.daily_journals (id TEXT PRIMARY KEY DEFAULT ('journal-' || extract(epoch from now())::bigint), user_id TEXT NOT NULL DEFAULT 'user-jarvis-1', date DATE NOT NULL, journal_type TEXT NOT NULL DEFAULT 'daily', market_overview TEXT, trading_plan TEXT, important_levels TEXT, expected_direction TEXT, setups_watched TEXT, trades_taken_summary TEXT, mistakes_made TEXT, emotional_state TEXT, lessons_learned TEXT, improvements_tomorrow TEXT, notes_rich_text TEXT, mood_score INT DEFAULT 4, attachments TEXT[] DEFAULT '{}', save_status TEXT DEFAULT 'saved', created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL, CONSTRAINT unique_daily_journal_date_type UNIQUE (user_id, date, journal_type));
+
+ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trading_accounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.instruments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.strategies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tags DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trades DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_journals DISABLE ROW LEVEL SECURITY;`
+
+                      await navigator.clipboard.writeText(sql)
+                      setHasCopiedSql(true)
+                      setTimeout(() => setHasCopiedSql(false), 3000)
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#EAB308] px-3 py-1.5 text-xs font-bold text-black hover:bg-[#EAB308]/90 transition-all cursor-pointer shadow-sm"
+                  >
+                    {hasCopiedSql ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{hasCopiedSql ? 'SQL Script Copied!' : 'Copy SQL Setup Script'}</span>
+                  </button>
+
+                  <a
+                    href="https://supabase.com/dashboard/project/hclxoemiitxjzvlvvbci/sql/new"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-[#202838] bg-[#141A26] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] hover:text-[#3B82F6] hover:border-[#3B82F6]/50 transition-colors"
+                  >
+                    <span>Open Supabase SQL Editor</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            )}
 
             <div className="text-xs text-[#8493A8] leading-relaxed space-y-2">
               <p>
-                All your trading accounts, custom instruments, playbook setups, and journal entries are securely managed.
+                Single source of truth architecture: all trading accounts, custom instruments, playbook setups, and journal entries are mapped directly to Supabase.
               </p>
               <div className="rounded-lg border border-[#202838] bg-[#10141E] p-3 font-mono text-[11px] text-[#E2E8F0]">
-                VITE_SUPABASE_URL=https://your-project.supabase.co
+                VITE_SUPABASE_URL=https://hclxoemiitxjzvlvvbci.supabase.co
                 <br />
-                VITE_SUPABASE_ANON_KEY=your-anon-key-here
+                VITE_SUPABASE_ANON_KEY=sb_publishable_YoanH5xywDOR4VaqdBCp0g_X5b8Dxvj
               </div>
             </div>
           </div>
@@ -603,10 +784,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {isInstrumentModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-xl border border-[#202838] bg-[#10141E] p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-[#E2E8F0] mb-4">Add Custom Instrument</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-[#E2E8F0]">Add Custom Instrument</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsInstrumentModalOpen(false)
+                  setInstrumentError(null)
+                  setInstrumentSuccess(null)
+                }}
+                className="text-[#8493A8] hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {instrumentError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 p-3 text-xs text-[#F05265]">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Error: </span>
+                  <span>{instrumentError}</span>
+                </div>
+              </div>
+            )}
+
+            {instrumentSuccess && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-[#18C784]/40 bg-[#18C784]/10 p-3 text-xs text-[#18C784]">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{instrumentSuccess}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateInstrument} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-[#8493A8] mb-1">Symbol Ticker</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Symbol Ticker <span className="text-[#F05265]">*</span></label>
                 <input
                   type="text"
                   value={instSymbol}
@@ -614,11 +826,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   placeholder="e.g. MNQ, MES, CL, EUR/JPY"
                   className="w-full rounded-lg border border-[#202838] bg-[#141A26] px-3 py-2 text-[#E2E8F0] uppercase font-mono focus:border-[#3B82F6] focus:outline-none"
                   required
+                  autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Full Instrument Name</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Full Instrument Name <span className="text-[#F05265]">*</span></label>
                 <input
                   type="text"
                   value={instName}
@@ -630,7 +843,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Asset Class</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Asset Class</label>
                 <select
                   value={instAssetClass}
                   onChange={(e) => setInstAssetClass(e.target.value as AssetClass)}
@@ -646,7 +859,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[#8493A8] mb-1">Tick Size</label>
+                  <label className="block text-[#8493A8] mb-1 font-medium">Tick Size</label>
                   <input
                     type="number"
                     step="any"
@@ -656,7 +869,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[#8493A8] mb-1">Tick Value ($)</label>
+                  <label className="block text-[#8493A8] mb-1 font-medium">Tick Value ($)</label>
                   <input
                     type="number"
                     step="any"
@@ -669,7 +882,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[#8493A8] mb-1">Point Value ($)</label>
+                  <label className="block text-[#8493A8] mb-1 font-medium">Point Value ($)</label>
                   <input
                     type="number"
                     step="any"
@@ -679,7 +892,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[#8493A8] mb-1">Roundtrip Commission ($)</label>
+                  <label className="block text-[#8493A8] mb-1 font-medium">Roundtrip Commission ($)</label>
                   <input
                     type="number"
                     step="any"
@@ -693,16 +906,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#202838]">
                 <button
                   type="button"
-                  onClick={() => setIsInstrumentModalOpen(false)}
-                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-[#8493A8]"
+                  disabled={isSubmittingInstrument}
+                  onClick={() => {
+                    setIsInstrumentModalOpen(false)
+                    setInstrumentError(null)
+                    setInstrumentSuccess(null)
+                  }}
+                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-[#8493A8] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-[#202838] border border-[#3B82F6]/60 px-4 py-2 font-bold text-white hover:border-[#3B82F6]"
+                  disabled={isSubmittingInstrument}
+                  style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 font-bold text-white shadow hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  Save Instrument
+                  {isSubmittingInstrument ? (
+                    <>
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Instrument</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -714,10 +941,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {isTagModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-xl border border-[#202838] bg-[#10141E] p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-[#E2E8F0] mb-4">Create Tag or Mistake</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-[#E2E8F0]">Create Tag or Mistake</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTagModalOpen(false)
+                  setTagError(null)
+                  setTagSuccess(null)
+                }}
+                className="text-[#8493A8] hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {tagError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 p-3 text-xs text-[#F05265]">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Error: </span>
+                  <span>{tagError}</span>
+                </div>
+              </div>
+            )}
+
+            {tagSuccess && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-[#18C784]/40 bg-[#18C784]/10 p-3 text-xs text-[#18C784]">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{tagSuccess}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateTag} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-[#8493A8] mb-1">Tag Name</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Tag Name <span className="text-[#F05265]">*</span></label>
                 <input
                   type="text"
                   value={tagName}
@@ -725,11 +983,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   placeholder="e.g. Premature Profit Take, Trend Pullback"
                   className="w-full rounded-lg border border-[#202838] bg-[#141A26] px-3 py-2 text-[#E2E8F0] focus:border-[#3B82F6] focus:outline-none"
                   required
+                  autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Category</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Category</label>
                 <select
                   value={tagCategory}
                   onChange={(e) => setTagCategory(e.target.value as any)}
@@ -744,7 +1003,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Color Marker</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Color Marker</label>
                 <div className="flex items-center gap-2">
                   {['#3B82F6', '#18C784', '#F05265', '#EAB308', '#A855F7', '#EC4899', '#64748B'].map((col) => (
                     <button
@@ -761,16 +1020,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#202838]">
                 <button
                   type="button"
-                  onClick={() => setIsTagModalOpen(false)}
-                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-[#8493A8]"
+                  disabled={isSubmittingTag}
+                  onClick={() => {
+                    setIsTagModalOpen(false)
+                    setTagError(null)
+                    setTagSuccess(null)
+                  }}
+                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-[#8493A8] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-[#202838] border border-[#3B82F6]/60 px-4 py-2 font-bold text-white hover:border-[#3B82F6]"
+                  disabled={isSubmittingTag}
+                  style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 font-bold text-white shadow hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  Save Tag
+                  {isSubmittingTag ? (
+                    <>
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Tag</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -782,10 +1055,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {isAccountModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-xl border border-[#202838] bg-[#10141E] p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-[#E2E8F0] mb-4">Add Trading Account</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-[#E2E8F0]">Add Trading Account</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAccountModalOpen(false)
+                  setAccountError(null)
+                  setAccountSuccess(null)
+                }}
+                className="text-[#8493A8] hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {accountError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 p-3 text-xs text-[#F05265]">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Error: </span>
+                  <span>{accountError}</span>
+                </div>
+              </div>
+            )}
+
+            {accountSuccess && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-[#18C784]/40 bg-[#18C784]/10 p-3 text-xs text-[#18C784]">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{accountSuccess}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateAccount} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[#8493A8] mb-1">Account Name</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Account Name <span className="text-[#F05265]">*</span></label>
                 <input
                   type="text"
                   value={accName}
@@ -793,11 +1097,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   placeholder="e.g. Apex 50k Futures #2"
                   className="w-full rounded-lg border border-[#202838] bg-[#141A26] px-3 py-2 text-[#E2E8F0] focus:border-[#3B82F6] focus:outline-none"
                   required
+                  autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Account Type</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Account Type</label>
                 <select
                   value={accType}
                   onChange={(e) => setAccType(e.target.value as AccountType)}
@@ -811,7 +1116,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Broker / Platform</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Broker / Platform</label>
                 <input
                   type="text"
                   value={accBroker}
@@ -822,7 +1127,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[#8493A8] mb-1">Starting Capital ($)</label>
+                <label className="block text-[#8493A8] mb-1 font-medium">Starting Capital ($) <span className="text-[#F05265]">*</span></label>
                 <input
                   type="number"
                   value={accBalance}
@@ -835,16 +1140,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#202838]">
                 <button
                   type="button"
-                  onClick={() => setIsAccountModalOpen(false)}
-                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-[#8493A8]"
+                  disabled={isSubmittingAccount}
+                  onClick={() => {
+                    setIsAccountModalOpen(false)
+                    setAccountError(null)
+                    setAccountSuccess(null)
+                  }}
+                  className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-[#8493A8] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-[#202838] border border-[#3B82F6]/60 px-4 py-2 font-bold text-white hover:border-[#3B82F6]"
+                  disabled={isSubmittingAccount}
+                  style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 font-bold text-white shadow hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  Create Account
+                  {isSubmittingAccount ? (
+                    <>
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <span>Create Account</span>
+                  )}
                 </button>
               </div>
             </form>

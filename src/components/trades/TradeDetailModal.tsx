@@ -155,10 +155,10 @@ export const TradeDetailModal: React.FC<TradeDetailModalProps> = ({
   const isLoss = trade.net_pnl < 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-4xl rounded-xl border border-[#263448] bg-[#090D14] shadow-2xl animate-in fade-in zoom-in-95 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-xl border border-[#263448] bg-[#090D14] shadow-2xl animate-in fade-in zoom-in-95 my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#263448] px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#263448] px-4 sm:px-6 py-4">
           <div className="flex items-center gap-3">
             <span
               className={`flex h-9 w-9 items-center justify-center rounded-lg font-bold ${

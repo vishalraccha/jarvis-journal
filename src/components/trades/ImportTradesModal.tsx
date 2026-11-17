@@ -154,10 +154,10 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-2xl rounded-xl border border-[#263448] bg-[#090D14] shadow-2xl animate-in fade-in zoom-in-95 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-xl border border-[#263448] bg-[#090D14] shadow-2xl animate-in fade-in zoom-in-95 my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#263448] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#263448] px-4 sm:px-6 py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#287BFF]/20 text-[#4095FF]">
               <Upload className="h-4 w-4" />

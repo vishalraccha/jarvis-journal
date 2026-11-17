@@ -1,0 +1,481 @@
+{
+  "accounts": [
+    {
+      "user_id": "user-jarvis-1",
+      "name": "VPropTrader",
+      "account_type": "evaluation",
+      "broker": "MT5",
+      "initial_balance": 1000,
+      "current_balance": 1014.9,
+      "currency": "USD",
+      "is_default": false,
+      "is_active": true,
+      "id": "acc-1794930417931",
+      "created_at": "2026-11-17T15:46:57.931Z",
+      "updated_at": "2026-11-17T15:46:57.931Z"
+    }
+  ],
+  "trades": [
+    {
+      "user_id": "user-jarvis-1",
+      "account_id": "acc-1794930417931",
+      "instrument_id": "inst-1",
+      "symbol": "NQ",
+      "asset_class": "futures",
+      "direction": "short",
+      "status": "closed",
+      "open_time": "2026-11-17T15:47:00.000Z",
+      "close_time": "2026-11-17T15:47:00.000Z",
+      "quantity": 0.02,
+      "entry_price": 26837,
+      "exit_price": 26786,
+      "stop_loss": 20750,
+      "take_profit": 20900,
+      "gross_pnl": 20.4,
+      "commission": 4.5,
+      "fees": 1,
+      "net_pnl": 14.9,
+      "roi_percentage": 2.78,
+      "r_multiple": null,
+      "strategy_id": "strat-2",
+      "setup": "Fair Value Gap / Liquidity Sweep",
+      "emotional_state": "Calm and Disciplined",
+      "mistakes": [],
+      "mae": null,
+      "mfe": null,
+      "notes": "BoomingBulls",
+      "market_session": "london",
+      "duration_minutes": 1,
+      "id": "trade-1794930543837",
+      "strategy": {
+        "id": "strat-2",
+        "user_id": "user-jarvis-1",
+        "name": "Fair Value Gap / Liquidity Sweep",
+        "description": "Liquidity grab followed by Market Structure Shift (MSS) and FVG retest.",
+        "entry_conditions": "Liquidity sweep + MSS + entry in 5m FVG.",
+        "exit_conditions": "Opposing liquidity pool or 2.5R target.",
+        "stop_loss_rules": "Beyond swing high/low that caused displacement.",
+        "take_profit_rules": "Draw on liquidity (DOL) target.",
+        "screenshot_url": null,
+        "color": "#18C784",
+        "is_active": true,
+        "created_at": "2026-11-17T15:46:18.774964+00:00",
+        "updated_at": "2026-11-17T15:46:18.774964+00:00"
+      },
+      "created_at": "2026-11-17T15:49:03.837Z",
+      "updated_at": "2026-11-17T15:49:03.837Z"
+    }
+  ],
+  "instruments": [
+    {
+      "id": "inst-1",
+      "symbol": "NQ",
+      "name": "E-mini Nasdaq-100 Futures",
+      "asset_class": "futures",
+      "tick_size": 0.25,
+      "tick_value": 5,
+      "contract_size": 1,
+      "point_value": 20,
+      "default_commission": 2.25,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-2",
+      "symbol": "ES",
+      "name": "E-mini S&P 500 Futures",
+      "asset_class": "futures",
+      "tick_size": 0.25,
+      "tick_value": 12.5,
+      "contract_size": 1,
+      "point_value": 50,
+      "default_commission": 2.25,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-3",
+      "symbol": "BTC/USDT",
+      "name": "Bitcoin / Tether Perpetual",
+      "asset_class": "crypto",
+      "tick_size": 0.1,
+      "tick_value": 0.1,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 1.5,
+      "currency": "USDT",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-4",
+      "symbol": "ETH/USDT",
+      "name": "Ethereum / Tether Perpetual",
+      "asset_class": "crypto",
+      "tick_size": 0.01,
+      "tick_value": 0.01,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 0.5,
+      "currency": "USDT",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-5",
+      "symbol": "XAU/USD",
+      "name": "Gold / US Dollar",
+      "asset_class": "commodities",
+      "tick_size": 0.01,
+      "tick_value": 1,
+      "contract_size": 100,
+      "point_value": 100,
+      "default_commission": 3,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-6",
+      "symbol": "EUR/USD",
+      "name": "Euro / US Dollar",
+      "asset_class": "forex",
+      "tick_size": 0.00001,
+      "tick_value": 1,
+      "contract_size": 100000,
+      "point_value": 100000,
+      "default_commission": 2.5,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-7",
+      "symbol": "GBP/USD",
+      "name": "British Pound / US Dollar",
+      "asset_class": "forex",
+      "tick_size": 0.00001,
+      "tick_value": 1,
+      "contract_size": 100000,
+      "point_value": 100000,
+      "default_commission": 2.5,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-8",
+      "symbol": "SPY",
+      "name": "SPDR S&P 500 ETF Trust",
+      "asset_class": "stocks",
+      "tick_size": 0.01,
+      "tick_value": 0.01,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 0,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-9",
+      "symbol": "QQQ",
+      "name": "Invesco QQQ Trust",
+      "asset_class": "stocks",
+      "tick_size": 0.01,
+      "tick_value": 0.01,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 0,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-10",
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "asset_class": "stocks",
+      "tick_size": 0.01,
+      "tick_value": 0.01,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 0,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-11",
+      "symbol": "TSLA",
+      "name": "Tesla, Inc.",
+      "asset_class": "stocks",
+      "tick_size": 0.01,
+      "tick_value": 0.01,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 0,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "inst-12",
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "asset_class": "stocks",
+      "tick_size": 0.01,
+      "tick_value": 0.01,
+      "contract_size": 1,
+      "point_value": 1,
+      "default_commission": 0,
+      "currency": "USD",
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag-1",
+      "user_id": "user-jarvis-1",
+      "name": "A+ Setup",
+      "color": "#18C784",
+      "category": "setup",
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "tag-2",
+      "user_id": "user-jarvis-1",
+      "name": "FOMO Entry",
+      "color": "#F05265",
+      "category": "mistake",
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "tag-3",
+      "user_id": "user-jarvis-1",
+      "name": "Disciplined Exit",
+      "color": "#287BFF",
+      "category": "general",
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "tag-4",
+      "user_id": "user-jarvis-1",
+      "name": "Chased Price",
+      "color": "#F05265",
+      "category": "mistake",
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "tag-5",
+      "user_id": "user-jarvis-1",
+      "name": "Trend Continuation",
+      "color": "#4095FF",
+      "category": "setup",
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "tag-6",
+      "user_id": "user-jarvis-1",
+      "name": "Calm & Focused",
+      "color": "#18C784",
+      "category": "emotion",
+      "created_at": "2026-11-16T00:00:00.000Z"
+    }
+  ],
+  "strategies": [
+    {
+      "id": "strat-1",
+      "user_id": "user-jarvis-1",
+      "name": "Opening Range Breakout (ORB)",
+      "description": "15-minute Opening Range Breakout with high relative volume confirmation.",
+      "entry_conditions": "5-minute close above/below 15m range.",
+      "exit_conditions": "2R target or VWAP reversal break.",
+      "stop_loss_rules": "Placed at midpoint of the 15-minute opening candle.",
+      "take_profit_rules": "Target 1 at 2R, Target 2 at prior day high/low.",
+      "color": "#287BFF",
+      "is_active": true,
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "strat-2",
+      "user_id": "user-jarvis-1",
+      "name": "Fair Value Gap / Liquidity Sweep",
+      "description": "Liquidity grab followed by Market Structure Shift (MSS) and FVG retest.",
+      "entry_conditions": "Liquidity sweep + MSS + entry in 5m FVG.",
+      "exit_conditions": "Opposing liquidity pool or 2.5R target.",
+      "stop_loss_rules": "Beyond swing high/low that caused displacement.",
+      "take_profit_rules": "Draw on liquidity (DOL) target.",
+      "color": "#18C784",
+      "is_active": true,
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "strat-3",
+      "user_id": "user-jarvis-1",
+      "name": "VWAP Mean Reversion",
+      "description": "Reversion into VWAP baseline from 2+ standard deviation bands.",
+      "entry_conditions": "Rejection wick at 2.5 VWAP deviation band.",
+      "exit_conditions": "VWAP baseline touch.",
+      "stop_loss_rules": "Fixed 1R or new high/low wick extension.",
+      "take_profit_rules": "VWAP line.",
+      "color": "#A855F7",
+      "is_active": true,
+      "created_at": "2026-11-16T00:00:00.000Z",
+      "updated_at": "2026-11-16T00:00:00.000Z"
+    }
+  ],
+  "journals": [],
+  "routines": [
+    {
+      "id": "rout-1",
+      "user_id": "user-jarvis-1",
+      "routine_type": "pre_market",
+      "title": "Pre-Market Preparation Routine",
+      "description": "Complete before market open at 09:30 AM EST",
+      "items": [
+        {
+          "id": "item-1",
+          "routine_id": "rout-1",
+          "user_id": "user-jarvis-1",
+          "label": "Check Economic Calendar (FOMC, CPI, NFP)",
+          "order_index": 1,
+          "is_active": true
+        },
+        {
+          "id": "item-2",
+          "routine_id": "rout-1",
+          "user_id": "user-jarvis-1",
+          "label": "Review Higher Timeframe (Daily & 4H) Key Levels",
+          "order_index": 2,
+          "is_active": true
+        },
+        {
+          "id": "item-3",
+          "routine_id": "rout-1",
+          "user_id": "user-jarvis-1",
+          "label": "Mark Prior Day High / Low and Overnight Range",
+          "order_index": 3,
+          "is_active": true
+        },
+        {
+          "id": "item-4",
+          "routine_id": "rout-1",
+          "user_id": "user-jarvis-1",
+          "label": "Identify Valid Trading Setups & Scenarios",
+          "order_index": 4,
+          "is_active": true
+        },
+        {
+          "id": "item-5",
+          "routine_id": "rout-1",
+          "user_id": "user-jarvis-1",
+          "label": "Define Maximum Daily Loss Limit ($1,000)",
+          "order_index": 5,
+          "is_active": true
+        },
+        {
+          "id": "item-6",
+          "routine_id": "rout-1",
+          "user_id": "user-jarvis-1",
+          "label": "Review Golden Rules: No revenge trading, respect SL",
+          "order_index": 6,
+          "is_active": true
+        }
+      ],
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "rout-2",
+      "user_id": "user-jarvis-1",
+      "routine_type": "during_market",
+      "title": "During-Market Execution Discipline",
+      "description": "Active session trading psychology checks",
+      "items": [
+        {
+          "id": "item-7",
+          "routine_id": "rout-2",
+          "user_id": "user-jarvis-1",
+          "label": "Wait for 5m candle close before entry signal",
+          "order_index": 1,
+          "is_active": true
+        },
+        {
+          "id": "item-8",
+          "routine_id": "rout-2",
+          "user_id": "user-jarvis-1",
+          "label": "Calculate position sizing prior to placing order",
+          "order_index": 2,
+          "is_active": true
+        },
+        {
+          "id": "item-9",
+          "routine_id": "rout-2",
+          "user_id": "user-jarvis-1",
+          "label": "Never move stop loss against the position",
+          "order_index": 3,
+          "is_active": true
+        },
+        {
+          "id": "item-10",
+          "routine_id": "rout-2",
+          "user_id": "user-jarvis-1",
+          "label": "Log emotional state if feeling FOMO or frustration",
+          "order_index": 4,
+          "is_active": true
+        }
+      ],
+      "created_at": "2026-11-16T00:00:00.000Z"
+    },
+    {
+      "id": "rout-3",
+      "user_id": "user-jarvis-1",
+      "routine_type": "post_market",
+      "title": "Post-Market Debrief & Review",
+      "description": "End of day performance consolidation",
+      "items": [
+        {
+          "id": "item-11",
+          "routine_id": "rout-3",
+          "user_id": "user-jarvis-1",
+          "label": "Log all trades taken with entries & exits",
+          "order_index": 1,
+          "is_active": true
+        },
+        {
+          "id": "item-12",
+          "routine_id": "rout-3",
+          "user_id": "user-jarvis-1",
+          "label": "Save chart screenshots with annotations",
+          "order_index": 2,
+          "is_active": true
+        },
+        {
+          "id": "item-13",
+          "routine_id": "rout-3",
+          "user_id": "user-jarvis-1",
+          "label": "Tag any mistakes or discipline infractions",
+          "order_index": 3,
+          "is_active": true
+        },
+        {
+          "id": "item-14",
+          "routine_id": "rout-3",
+          "user_id": "user-jarvis-1",
+          "label": "Write 10-step daily journal entry and tomorrow goals",
+          "order_index": 4,
+          "is_active": true
+        }
+      ],
+      "created_at": "2026-11-16T00:00:00.000Z"
+    }
+  ],
+  "routine_completions": [],
+  "backtest_sessions": [],
+  "backtest_trades": []
+}

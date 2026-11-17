@@ -116,7 +116,7 @@ export const App: React.FC = () => {
         />
 
         {/* View Router */}
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-y-auto px-2.5 py-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             {currentTab === 'dashboard' && (
               <DashboardView

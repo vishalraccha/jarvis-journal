@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   TrendingUp,
   X,
+  AlertCircle,
 } from 'lucide-react'
 import { Strategy, Trade } from '@/types/database'
 import { api } from '@/services/api'
@@ -32,6 +33,8 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
   const { currency } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // Form State
   const [name, setName] = useState('')
@@ -44,6 +47,7 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
 
   const openCreateModal = () => {
     setEditingStrategy(null)
+    setSaveError(null)
     setName('')
     setDescription('')
     setEntryConditions('')
@@ -56,6 +60,7 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
 
   const openEditModal = (strat: Strategy) => {
     setEditingStrategy(strat)
+    setSaveError(null)
     setName(strat.name)
     setDescription(strat.description || '')
     setEntryConditions(strat.entry_conditions || '')
@@ -70,32 +75,42 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
     e.preventDefault()
     if (!name.trim()) return
 
-    if (editingStrategy) {
-      await api.updateStrategy(editingStrategy.id, {
-        name,
-        description,
-        entry_conditions: entryConditions,
-        exit_conditions: exitConditions,
-        stop_loss_rules: stopLossRules,
-        take_profit_rules: takeProfitRules,
-        color,
-      })
-    } else {
-      await api.createStrategy({
-        user_id: 'user-jarvis-1',
-        name,
-        description,
-        entry_conditions: entryConditions,
-        exit_conditions: exitConditions,
-        stop_loss_rules: stopLossRules,
-        take_profit_rules: takeProfitRules,
-        color,
-        is_active: true,
-      })
-    }
+    setIsSubmitting(true)
+    setSaveError(null)
 
-    setIsModalOpen(false)
-    onRefresh()
+    try {
+      if (editingStrategy) {
+        await api.updateStrategy(editingStrategy.id, {
+          name,
+          description,
+          entry_conditions: entryConditions,
+          exit_conditions: exitConditions,
+          stop_loss_rules: stopLossRules,
+          take_profit_rules: takeProfitRules,
+          color,
+        })
+      } else {
+        await api.createStrategy({
+          user_id: 'user-jarvis-1',
+          name,
+          description,
+          entry_conditions: entryConditions,
+          exit_conditions: exitConditions,
+          stop_loss_rules: stopLossRules,
+          take_profit_rules: takeProfitRules,
+          color,
+          is_active: true,
+        })
+      }
+
+      setIsModalOpen(false)
+      onRefresh()
+    } catch (err: any) {
+      console.error('Error saving strategy:', err)
+      setSaveError(err.message || 'Error saving strategy.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleDelete = async (id: string, stratName: string) => {
@@ -241,6 +256,16 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
               </button>
             </div>
 
+            {saveError && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 p-3 text-xs text-[#F05265]">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Error: </span>
+                  <span>{saveError}</span>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-[#8493A8] mb-1">Strategy Name</label>
@@ -301,6 +326,7 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#263448]">
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-lg border border-[#202838] bg-[#141A26] px-4 py-2 text-xs text-[#8493A8] hover:text-[#E2E8F0]"
                 >
@@ -308,10 +334,18 @@ export const StrategiesView: React.FC<StrategiesViewProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   style={{ backgroundColor: 'var(--accent-color, #3B82F6)' }}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition-all cursor-pointer"
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  {editingStrategy ? 'Update Strategy' : 'Create Strategy'}
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>{editingStrategy ? 'Update Strategy' : 'Create Strategy'}</span>
+                  )}
                 </button>
               </div>
             </form>

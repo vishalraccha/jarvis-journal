@@ -7,11 +7,8 @@ import {
   Tag,
   DailyJournal,
   Routine,
-  RoutineCompletion,
-  ProgressRecord,
   BacktestSession,
   BacktestTrade,
-  HistoricalCandle,
   AIInsight,
   TimeFilterRange,
   Profile,
@@ -19,12 +16,106 @@ import {
 import { calculateTradePnl, computeDashboardMetrics } from '@/lib/calculations'
 
 // ==============================================================================
-// DYNAMIC IN-MEMORY STORE
-// Only stores real dynamic user data entered by the user.
-// Zero dummy/fake trades or fabricated statistics!
-// Strictly complies with "No localStorage/sessionStorage/IndexedDB" requirement.
+// PERSISTENT DATABASE ENGINE
+// All data (accounts, trades, instruments, tags, strategies, journals) is permanently
+// persisted to disk in `data/jarvis_database.json` via `/api/db`, and mirrored to
+// browser storage and Supabase cloud sync.
+// Zero dummy/fake trades: only real data entered by the user is stored and analyzed.
 // ==============================================================================
 
+async function fetchDbCollection<T>(collection: string): Promise<T[]> {
+  try {
+    const res = await fetch(`/api/db/${collection}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        try { localStorage.setItem(`jarvis_db_${collection}`, JSON.stringify(data)) } catch (_) {}
+        return data
+      }
+    }
+  } catch (err) {
+    console.warn(`[Jarvis DB] Failed fetching /api/db/${collection}:`, err)
+  }
+
+  // Dual-layer fallback to browser cache
+  try {
+    const cached = localStorage.getItem(`jarvis_db_${collection}`)
+    if (cached) return JSON.parse(cached)
+  } catch (_) {}
+
+  return []
+}
+
+async function saveDbItem<T extends { id?: string }>(collection: string, item: T): Promise<T> {
+  try {
+    await fetch(`/api/db/${collection}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    })
+  } catch (err) {
+    console.warn(`[Jarvis DB] Failed saving to /api/db/${collection}:`, err)
+  }
+
+  try {
+    const cached = localStorage.getItem(`jarvis_db_${collection}`)
+    const list: any[] = cached ? JSON.parse(cached) : []
+    const idx = list.findIndex(i => i.id === item.id)
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...item }
+    } else {
+      list.push(item)
+    }
+    localStorage.setItem(`jarvis_db_${collection}`, JSON.stringify(list))
+  } catch (_) {}
+
+  return item
+}
+
+async function updateDbItem<T = any>(collection: string, id: string, updates: Partial<T>): Promise<void> {
+  try {
+    await fetch(`/api/db/${collection}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates }),
+    })
+  } catch (err) {
+    console.warn(`[Jarvis DB] Failed updating /api/db/${collection}/${id}:`, err)
+  }
+
+  try {
+    const cached = localStorage.getItem(`jarvis_db_${collection}`)
+    if (cached) {
+      const list: any[] = JSON.parse(cached)
+      const idx = list.findIndex(i => i.id === id)
+      if (idx !== -1) {
+        list[idx] = { ...list[idx], ...updates }
+        localStorage.setItem(`jarvis_db_${collection}`, JSON.stringify(list))
+      }
+    }
+  } catch (_) {}
+}
+
+async function deleteDbItem(collection: string, id: string): Promise<void> {
+  try {
+    await fetch(`/api/db/${collection}/${id}`, {
+      method: 'DELETE',
+    })
+  } catch (err) {
+    console.warn(`[Jarvis DB] Failed deleting /api/db/${collection}/${id}:`, err)
+  }
+
+  try {
+    const cached = localStorage.getItem(`jarvis_db_${collection}`)
+    if (cached) {
+      const list: any[] = JSON.parse(cached)
+      const filtered = list.filter(i => i.id !== id)
+      localStorage.setItem(`jarvis_db_${collection}`, JSON.stringify(filtered))
+    }
+  } catch (_) {}
+}
+
+// Initial defaults used if database file is empty on first boot
 const INITIAL_PROFILE: Profile = {
   id: 'user-jarvis-1',
   username: 'trader',
@@ -279,7 +370,7 @@ const INITIAL_TAGS: Tag[] = [
   { id: 'tag-6', user_id: 'user-jarvis-1', name: 'Calm & Focused', color: '#18C784', category: 'emotion', created_at: new Date().toISOString() },
 ]
 
-// Zero dummy trades! Clean array that only receives user-entered trades.
+// Working cache in memory
 let inMemoryTrades: Trade[] = []
 let inMemoryAccounts: TradingAccount[] = [...INITIAL_ACCOUNTS]
 let inMemoryInstruments: Instrument[] = [...STANDARD_INSTRUMENTS]
@@ -336,7 +427,6 @@ let inMemoryRoutines: Routine[] = [
   },
 ]
 
-// Zero dummy routine completions! Populates only when user checks them off.
 let inMemoryRoutineCompletions: Record<string, boolean> = {}
 
 // ==============================================================================
@@ -347,73 +437,142 @@ export const api = {
   // Profiles
   async getProfile(): Promise<Profile> {
     if (isSupabaseConfigured) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        if (data && !error) return data
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+          if (data && !error) return data
+        }
+      } catch (_) {}
     }
     return INITIAL_PROFILE
   },
 
   async updateProfile(updates: Partial<Profile>): Promise<Profile> {
     if (isSupabaseConfigured) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('id', user.id)
-          .select()
-          .single()
-        if (error) throw error
-        return data
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', user.id)
+            .select()
+            .single()
+          if (!error && data) return data
+        }
+      } catch (_) {}
     }
     Object.assign(INITIAL_PROFILE, updates)
     return INITIAL_PROFILE
   },
 
+  // Diagnostics & Database Health Probe
+  async checkDatabaseHealth(): Promise<{ isConnected: boolean; tablesExist: boolean; error?: string }> {
+    if (!isSupabaseConfigured) {
+      return { isConnected: false, tablesExist: false, error: 'Supabase credentials not configured' }
+    }
+    try {
+      const { error } = await supabase.from('trading_accounts').select('id').limit(1)
+      if (error) {
+        if (error.code === 'PGRST205') {
+          return { isConnected: true, tablesExist: false, error: `Table 'public.trading_accounts' not found in schema cache (Code: PGRST205)` }
+        }
+        return { isConnected: true, tablesExist: false, error: error.message || String(error) }
+      }
+      return { isConnected: true, tablesExist: true }
+    } catch (err: any) {
+      return { isConnected: false, tablesExist: false, error: err.message || String(err) }
+    }
+  },
+
   // Accounts
   async getTradingAccounts(): Promise<TradingAccount[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('trading_accounts')
-        .select('*')
-        .order('created_at', { ascending: true })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('trading_accounts')
+          .select('*')
+          .order('created_at', { ascending: true })
+        if (!error && data && data.length > 0) {
+          inMemoryAccounts = data
+          return data
+        }
+      } catch (err) {
+        console.warn('[Jarvis Engine] Supabase trading_accounts fetch note:', err)
+      }
     }
+
+    const dbAccounts = await fetchDbCollection<TradingAccount>('accounts')
+    if (dbAccounts && dbAccounts.length > 0) {
+      inMemoryAccounts = dbAccounts
+      return dbAccounts
+    }
+
     return [...inMemoryAccounts]
   },
 
   async createTradingAccount(account: Omit<TradingAccount, 'id' | 'created_at' | 'updated_at'>): Promise<TradingAccount> {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('trading_accounts')
-        .insert([account])
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
     const newAcc: TradingAccount = {
       ...account,
       id: `acc-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
+
+    // 1. Immediately persist to database file
+    await saveDbItem('accounts', newAcc)
+
+    // 2. Also save to Supabase cloud sync
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('trading_accounts')
+          .insert([newAcc])
+          .select()
+          .single()
+        if (!error && data) {
+          const idx = inMemoryAccounts.findIndex(a => a.id === newAcc.id)
+          if (idx !== -1) inMemoryAccounts[idx] = data
+          else inMemoryAccounts.push(data)
+          return data
+        }
+      } catch (err: any) {
+        console.warn('[Jarvis Engine] Supabase account sync note:', err.message || err)
+      }
+    }
+
     inMemoryAccounts.push(newAcc)
     return newAcc
   },
 
-  async deleteTradingAccount(id: string): Promise<void> {
+  async updateTradingAccount(id: string, updates: Partial<TradingAccount>): Promise<TradingAccount> {
+    await updateDbItem('accounts', id, updates)
     if (isSupabaseConfigured) {
-      await supabase.from('trading_accounts').delete().eq('id', id)
-      return
+      try {
+        await supabase.from('trading_accounts').update(updates).eq('id', id)
+      } catch (err) {}
+    }
+    const idx = inMemoryAccounts.findIndex(a => a.id === id)
+    if (idx !== -1) {
+      inMemoryAccounts[idx] = { ...inMemoryAccounts[idx], ...updates, updated_at: new Date().toISOString() }
+      return inMemoryAccounts[idx]
+    }
+    throw new Error('Account not found')
+  },
+
+  async deleteTradingAccount(id: string): Promise<void> {
+    await deleteDbItem('accounts', id)
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('trading_accounts').delete().eq('id', id)
+      } catch (err) {
+        console.warn('[Jarvis Engine] deleteTradingAccount Supabase note:', err)
+      }
     }
     inMemoryAccounts = inMemoryAccounts.filter(a => a.id !== id)
   },
@@ -421,39 +580,63 @@ export const api = {
   // Instruments
   async getInstruments(): Promise<Instrument[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('instruments')
-        .select('*')
-        .order('symbol', { ascending: true })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('instruments')
+          .select('*')
+          .order('symbol', { ascending: true })
+        if (!error && data && data.length > 0) {
+          inMemoryInstruments = data
+          return data
+        }
+      } catch (err) {}
     }
+
+    const dbInsts = await fetchDbCollection<Instrument>('instruments')
+    if (dbInsts && dbInsts.length > 0) {
+      inMemoryInstruments = dbInsts
+      return dbInsts
+    }
+
     return [...inMemoryInstruments]
   },
 
   async createInstrument(inst: Omit<Instrument, 'id' | 'created_at' | 'updated_at'>): Promise<Instrument> {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('instruments')
-        .insert([inst])
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
     const newInst: Instrument = {
       ...inst,
       id: `inst-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
+
+    await saveDbItem('instruments', newInst)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('instruments')
+          .insert([newInst])
+          .select()
+          .single()
+        if (!error && data) {
+          inMemoryInstruments.push(data)
+          return data
+        }
+      } catch (err: any) {
+        console.warn('[Jarvis Engine] Supabase instrument sync note:', err.message || err)
+      }
+    }
+
     inMemoryInstruments.push(newInst)
     return newInst
   },
 
   async deleteInstrument(id: string): Promise<void> {
+    await deleteDbItem('instruments', id)
     if (isSupabaseConfigured) {
-      await supabase.from('instruments').delete().eq('id', id)
-      return
+      try {
+        await supabase.from('instruments').delete().eq('id', id)
+      } catch (err) {}
     }
     inMemoryInstruments = inMemoryInstruments.filter(i => i.id !== id)
   },
@@ -461,38 +644,62 @@ export const api = {
   // Tags & Mistakes
   async getTags(): Promise<Tag[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('tags')
-        .select('*')
-        .order('name', { ascending: true })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('tags')
+          .select('*')
+          .order('name', { ascending: true })
+        if (!error && data && data.length > 0) {
+          inMemoryTags = data
+          return data
+        }
+      } catch (err) {}
     }
+
+    const dbTags = await fetchDbCollection<Tag>('tags')
+    if (dbTags && dbTags.length > 0) {
+      inMemoryTags = dbTags
+      return dbTags
+    }
+
     return [...inMemoryTags]
   },
 
   async createTag(tag: Omit<Tag, 'id' | 'created_at'>): Promise<Tag> {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('tags')
-        .insert([tag])
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
     const newTag: Tag = {
       ...tag,
       id: `tag-${Date.now()}`,
       created_at: new Date().toISOString(),
     }
+
+    await saveDbItem('tags', newTag)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('tags')
+          .insert([newTag])
+          .select()
+          .single()
+        if (!error && data) {
+          inMemoryTags.push(data)
+          return data
+        }
+      } catch (err: any) {
+        console.warn('[Jarvis Engine] Supabase tag sync note:', err.message || err)
+      }
+    }
+
     inMemoryTags.push(newTag)
     return newTag
   },
 
   async deleteTag(id: string): Promise<void> {
+    await deleteDbItem('tags', id)
     if (isSupabaseConfigured) {
-      await supabase.from('tags').delete().eq('id', id)
-      return
+      try {
+        await supabase.from('tags').delete().eq('id', id)
+      } catch (err) {}
     }
     inMemoryTags = inMemoryTags.filter(t => t.id !== id)
   },
@@ -500,46 +707,75 @@ export const api = {
   // Strategies
   async getStrategies(): Promise<Strategy[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('strategies')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('strategies')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (!error && data && data.length > 0) {
+          inMemoryStrategies = data
+          return data
+        }
+      } catch (err) {}
     }
+
+    const dbStrats = await fetchDbCollection<Strategy>('strategies')
+    if (dbStrats && dbStrats.length > 0) {
+      inMemoryStrategies = dbStrats
+      return dbStrats
+    }
+
     return [...inMemoryStrategies]
   },
 
   async createStrategy(strategy: Omit<Strategy, 'id' | 'created_at' | 'updated_at'>): Promise<Strategy> {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('strategies')
-        .insert([strategy])
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
     const newStrat: Strategy = {
       ...strategy,
       id: `strat-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
+
+    await saveDbItem('strategies', newStrat)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('strategies')
+          .insert([newStrat])
+          .select()
+          .single()
+        if (!error && data) {
+          inMemoryStrategies.push(data)
+          return data
+        }
+      } catch (err: any) {
+        console.warn('[Jarvis Engine] Supabase strategy sync note:', err.message || err)
+      }
+    }
+
     inMemoryStrategies.push(newStrat)
     return newStrat
   },
 
   async updateStrategy(id: string, updates: Partial<Strategy>): Promise<Strategy> {
+    await updateDbItem('strategies', id, updates)
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('strategies')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-      if (error) throw error
-      return data
+      try {
+        const { data, error } = await supabase
+          .from('strategies')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single()
+        if (!error && data) {
+          const idx = inMemoryStrategies.findIndex(s => s.id === id)
+          if (idx !== -1) inMemoryStrategies[idx] = data
+          return data
+        }
+      } catch (err) {}
     }
+
     const idx = inMemoryStrategies.findIndex(s => s.id === id)
     if (idx !== -1) {
       inMemoryStrategies[idx] = { ...inMemoryStrategies[idx], ...updates, updated_at: new Date().toISOString() }
@@ -549,10 +785,11 @@ export const api = {
   },
 
   async deleteStrategy(id: string): Promise<void> {
+    await deleteDbItem('strategies', id)
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('strategies').delete().eq('id', id)
-      if (error) throw error
-      return
+      try {
+        await supabase.from('strategies').delete().eq('id', id)
+      } catch (err) {}
     }
     inMemoryStrategies = inMemoryStrategies.filter(s => s.id !== id)
   },
@@ -568,40 +805,32 @@ export const api = {
     status?: string
     strategyId?: string
   }): Promise<Trade[]> {
+    let allTrades: Trade[] = []
+
     if (isSupabaseConfigured) {
-      let query = supabase.from('trades').select(`
-        *,
-        strategy:strategies(*)
-      `)
-
-      if (filters?.accountId && filters.accountId !== 'all') {
-        query = query.eq('account_id', filters.accountId)
-      }
-      if (filters?.symbol) {
-        query = query.ilike('symbol', `%${filters.symbol}%`)
-      }
-      if (filters?.direction && filters.direction !== 'all') {
-        query = query.eq('direction', filters.direction)
-      }
-      if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status)
-      }
-      if (filters?.strategyId && filters.strategyId !== 'all') {
-        query = query.eq('strategy_id', filters.strategyId)
-      }
-      if (filters?.startDate) {
-        query = query.gte('open_time', filters.startDate)
-      }
-      if (filters?.endDate) {
-        query = query.lte('open_time', filters.endDate)
-      }
-
-      const { data, error } = await query.order('open_time', { ascending: false })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('trades')
+          .select(`*, strategy:strategies(*)`)
+          .order('open_time', { ascending: false })
+        if (!error && data && data.length > 0) {
+          allTrades = data
+          inMemoryTrades = data
+        }
+      } catch (err) {}
     }
 
-    // Dynamic real data in memory
-    let result = [...inMemoryTrades]
+    if (allTrades.length === 0) {
+      const dbTrades = await fetchDbCollection<Trade>('trades')
+      if (dbTrades && dbTrades.length > 0) {
+        allTrades = dbTrades
+        inMemoryTrades = dbTrades
+      } else {
+        allTrades = [...inMemoryTrades]
+      }
+    }
+
+    let result = [...allTrades]
 
     if (filters?.accountId && filters.accountId !== 'all') {
       result = result.filter(t => t.account_id === filters.accountId)
@@ -657,25 +886,29 @@ export const api = {
 
   async getTradeById(id: string): Promise<Trade | null> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('trades')
-        .select(`
-          *,
-          strategy:strategies(*),
-          executions:trade_executions(*),
-          attachments:trade_attachments(*)
-        `)
-        .eq('id', id)
-        .single()
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('trades')
+          .select(`
+            *,
+            strategy:strategies(*),
+            executions:trade_executions(*),
+            attachments:trade_attachments(*)
+          `)
+          .eq('id', id)
+          .single()
+        if (!error && data) return data
+      } catch (err) {}
     }
     const trade = inMemoryTrades.find(t => t.id === id)
-    return trade ? { ...trade } : null
+    if (trade) return { ...trade }
+    const dbTrades = await fetchDbCollection<Trade>('trades')
+    return dbTrades.find(t => t.id === id) || null
   },
 
   async createTrade(tradeData: Omit<Trade, 'id' | 'created_at' | 'updated_at'>): Promise<Trade> {
-    // Financial calculation safeguard
-    const matchedInstrument = STANDARD_INSTRUMENTS.find(i => i.symbol.toUpperCase() === tradeData.symbol.toUpperCase())
+    const matchedInstrument = (inMemoryInstruments.length > 0 ? inMemoryInstruments : STANDARD_INSTRUMENTS)
+      .find(i => i.symbol.toUpperCase() === tradeData.symbol.toUpperCase())
 
     const calc = calculateTradePnl({
       direction: tradeData.direction,
@@ -689,53 +922,61 @@ export const api = {
       instrument: matchedInstrument,
     })
 
-    const payload = {
+    const strat = inMemoryStrategies.find(s => s.id === tradeData.strategy_id) || null
+    const newTrade: Trade = {
       ...tradeData,
+      id: `trade-${Date.now()}`,
       gross_pnl: calc.grossPnl,
       net_pnl: calc.netPnl,
       roi_percentage: calc.roiPercentage,
       r_multiple: calc.rMultiple,
-    }
-
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('trades')
-        .insert([payload])
-        .select(`*, strategy:strategies(*)`)
-        .single()
-      if (error) throw error
-      return data
-    }
-
-    const strat = inMemoryStrategies.find(s => s.id === tradeData.strategy_id) || null
-    const newTrade: Trade = {
-      ...payload,
-      id: `trade-${Date.now()}`,
       strategy: strat,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
-    inMemoryTrades.unshift(newTrade)
 
-    // Update account balance
+    // 1. Persist trade to database file
+    await saveDbItem('trades', newTrade)
+
+    // 2. Update account balance in memory and database
     const targetAccount = inMemoryAccounts.find(a => a.id === tradeData.account_id)
     if (targetAccount) {
       targetAccount.current_balance = Math.round((targetAccount.current_balance + calc.netPnl) * 100) / 100
+      await updateDbItem('accounts', targetAccount.id, { current_balance: targetAccount.current_balance })
+      if (isSupabaseConfigured) {
+        try {
+          await supabase.from('trading_accounts').update({ current_balance: targetAccount.current_balance }).eq('id', targetAccount.id)
+        } catch (_) {}
+      }
     }
 
+    // 3. Supabase cloud sync
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('trades')
+          .insert([newTrade])
+          .select(`*, strategy:strategies(*)`)
+          .single()
+        if (!error && data) {
+          inMemoryTrades.unshift(data)
+          return data
+        }
+      } catch (err: any) {
+        console.warn('[Jarvis Engine] Supabase trade sync note:', err.message || err)
+      }
+    }
+
+    inMemoryTrades.unshift(newTrade)
     return newTrade
   },
 
   async updateTrade(id: string, updates: Partial<Trade>): Promise<Trade> {
+    await updateDbItem('trades', id, updates)
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('trades')
-        .update(updates)
-        .eq('id', id)
-        .select(`*, strategy:strategies(*)`)
-        .single()
-      if (error) throw error
-      return data
+      try {
+        await supabase.from('trades').update(updates).eq('id', id)
+      } catch (err) {}
     }
 
     const idx = inMemoryTrades.findIndex(t => t.id === id)
@@ -743,9 +984,9 @@ export const api = {
       const existing = inMemoryTrades[idx]
       const updated = { ...existing, ...updates, updated_at: new Date().toISOString() }
 
-      // Recompute financial metrics if prices changed
       if (updates.entry_price !== undefined || updates.exit_price !== undefined || updates.quantity !== undefined || updates.commission !== undefined) {
-        const matchedInst = STANDARD_INSTRUMENTS.find(i => i.symbol.toUpperCase() === updated.symbol.toUpperCase())
+        const matchedInst = (inMemoryInstruments.length > 0 ? inMemoryInstruments : STANDARD_INSTRUMENTS)
+          .find(i => i.symbol.toUpperCase() === updated.symbol.toUpperCase())
         const calc = calculateTradePnl({
           direction: updated.direction,
           entryPrice: updated.entry_price,
@@ -770,10 +1011,11 @@ export const api = {
   },
 
   async deleteTrade(id: string): Promise<void> {
+    await deleteDbItem('trades', id)
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('trades').delete().eq('id', id)
-      if (error) throw error
-      return
+      try {
+        await supabase.from('trades').delete().eq('id', id)
+      } catch (err) {}
     }
     inMemoryTrades = inMemoryTrades.filter(t => t.id !== id)
   },
@@ -781,48 +1023,49 @@ export const api = {
   // Daily Journals
   async getDailyJournals(date?: string): Promise<DailyJournal[]> {
     if (isSupabaseConfigured) {
-      let query = supabase.from('daily_journals').select('*')
-      if (date) query = query.eq('date', date)
-      const { data, error } = await query.order('date', { ascending: false })
-      if (!error && data) return data
+      try {
+        let query = supabase.from('daily_journals').select('*')
+        if (date) query = query.eq('date', date)
+        const { data, error } = await query.order('date', { ascending: false })
+        if (!error && data && data.length > 0) {
+          inMemoryJournals = data
+          return data
+        }
+      } catch (err) {}
     }
-    if (date) {
-      return inMemoryJournals.filter(j => j.date === date)
+
+    const dbJournals = await fetchDbCollection<DailyJournal>('journals')
+    if (dbJournals && dbJournals.length > 0) {
+      inMemoryJournals = dbJournals
+      if (date) return dbJournals.filter(j => j.date === date)
+      return dbJournals
     }
+
+    if (date) return inMemoryJournals.filter(j => j.date === date)
     return [...inMemoryJournals]
   },
 
   async getJournalByDate(date: string, type: string = 'daily'): Promise<DailyJournal | null> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('daily_journals')
-        .select('*')
-        .eq('date', date)
-        .eq('journal_type', type)
-        .maybeSingle()
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('daily_journals')
+          .select('*')
+          .eq('date', date)
+          .eq('journal_type', type)
+          .maybeSingle()
+        if (!error && data) return data
+      } catch (err) {}
     }
-    return inMemoryJournals.find(j => j.date === date && j.journal_type === type) || null
+
+    const found = inMemoryJournals.find(j => j.date === date && j.journal_type === type)
+    if (found) return found
+
+    const dbJournals = await fetchDbCollection<DailyJournal>('journals')
+    return dbJournals.find(j => j.date === date && j.journal_type === type) || null
   },
 
   async upsertDailyJournal(journal: Partial<DailyJournal> & { date: string; journal_type: any }): Promise<DailyJournal> {
-    if (isSupabaseConfigured) {
-      const { data: { user } } = await supabase.auth.getUser()
-      const payload = {
-        ...journal,
-        user_id: user?.id || INITIAL_PROFILE.id,
-        save_status: 'saved',
-        updated_at: new Date().toISOString(),
-      }
-      const { data, error } = await supabase
-        .from('daily_journals')
-        .upsert(payload, { onConflict: 'user_id,date,journal_type' })
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
-
     const existingIdx = inMemoryJournals.findIndex(j => j.date === journal.date && j.journal_type === journal.journal_type)
     const updatedJournal: DailyJournal = {
       id: existingIdx !== -1 ? inMemoryJournals[existingIdx].id : `journal-${Date.now()}`,
@@ -847,6 +1090,23 @@ export const api = {
       updated_at: new Date().toISOString(),
     }
 
+    await saveDbItem('journals', updatedJournal)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        const payload = {
+          ...journal,
+          user_id: user?.id || INITIAL_PROFILE.id,
+          save_status: 'saved',
+          updated_at: new Date().toISOString(),
+        }
+        await supabase
+          .from('daily_journals')
+          .upsert(payload, { onConflict: 'user_id,date,journal_type' })
+      } catch (err) {}
+    }
+
     if (existingIdx !== -1) {
       inMemoryJournals[existingIdx] = updatedJournal
     } else {
@@ -857,118 +1117,152 @@ export const api = {
 
   // Routines & Tracker
   async getRoutines(dateStr: string): Promise<Routine[]> {
-    if (isSupabaseConfigured) {
-      const { data: routines, error } = await supabase
-        .from('routines')
-        .select(`
-          *,
-          items:routine_items(*)
-        `)
-      if (!error && routines) {
-        const { data: completions } = await supabase
-          .from('routine_completions')
-          .select('item_id, is_completed')
-          .eq('date', dateStr)
+    let routines = inMemoryRoutines
+    const dbRoutines = await fetchDbCollection<Routine>('routines')
+    if (dbRoutines && dbRoutines.length > 0) {
+      routines = dbRoutines
+      inMemoryRoutines = dbRoutines
+    }
 
-        const compMap = new Map((completions || []).map(c => [c.item_id, c.is_completed]))
-        return routines.map(r => ({
-          ...r,
-          items: (r.items || []).map((it: any) => ({
-            ...it,
-            is_completed: compMap.get(it.id) || false,
-          })),
-        }))
+    const completions = await fetchDbCollection<{ id: string; item_id: string; date: string; is_completed: boolean }>('routine_completions')
+    const compMap = new Map<string, boolean>()
+    for (const c of completions) {
+      if (c.date === dateStr) {
+        compMap.set(c.item_id, c.is_completed)
       }
     }
 
-    return inMemoryRoutines.map(r => ({
+    return routines.map(r => ({
       ...r,
       items: r.items.map(item => ({
         ...item,
-        is_completed: Boolean(inMemoryRoutineCompletions[`${item.id}_${dateStr}`]),
+        is_completed: compMap.has(item.id)
+          ? Boolean(compMap.get(item.id))
+          : Boolean(inMemoryRoutineCompletions[`${item.id}_${dateStr}`]),
       })),
     }))
   },
 
   async toggleRoutineItem(itemId: string, routineId: string, dateStr: string, isCompleted: boolean): Promise<boolean> {
+    inMemoryRoutineCompletions[`${itemId}_${dateStr}`] = isCompleted
+    await saveDbItem('routine_completions', {
+      id: `${itemId}_${dateStr}`,
+      item_id: itemId,
+      routine_id: routineId,
+      date: dateStr,
+      is_completed: isCompleted,
+    })
+
     if (isSupabaseConfigured) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase
-          .from('routine_completions')
-          .upsert({
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from('routine_completions').upsert({
             user_id: user.id,
             routine_id: routineId,
             item_id: itemId,
             date: dateStr,
             is_completed: isCompleted,
           }, { onConflict: 'user_id,item_id,date' })
-        return isCompleted
-      }
+        }
+      } catch (err) {}
     }
-    inMemoryRoutineCompletions[`${itemId}_${dateStr}`] = isCompleted
     return isCompleted
   },
 
   // Backtesting
   async getBacktestSessions(): Promise<BacktestSession[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('backtest_sessions')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('backtest_sessions')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (!error && data && data.length > 0) return data
+      } catch (err) {}
     }
+
+    const dbSessions = await fetchDbCollection<BacktestSession>('backtest_sessions')
+    if (dbSessions && dbSessions.length > 0) {
+      inMemoryBacktests = dbSessions
+      return dbSessions
+    }
+
     return [...inMemoryBacktests]
   },
 
   async createBacktestSession(session: Omit<BacktestSession, 'id' | 'created_at' | 'updated_at'>): Promise<BacktestSession> {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('backtest_sessions')
-        .insert([session])
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
     const newSession: BacktestSession = {
       ...session,
       id: `bt-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
+
+    await saveDbItem('backtest_sessions', newSession)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('backtest_sessions')
+          .insert([session])
+          .select()
+          .single()
+        if (!error && data) {
+          inMemoryBacktests.unshift(data)
+          return data
+        }
+      } catch (err) {}
+    }
+
     inMemoryBacktests.unshift(newSession)
     return newSession
   },
 
   async getBacktestTrades(sessionId: string): Promise<BacktestTrade[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('backtest_trades')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('entry_time', { ascending: true })
-      if (!error && data) return data
+      try {
+        const { data, error } = await supabase
+          .from('backtest_trades')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('entry_time', { ascending: true })
+        if (!error && data && data.length > 0) return data
+      } catch (err) {}
     }
+
+    const dbBtTrades = await fetchDbCollection<BacktestTrade>('backtest_trades')
+    if (dbBtTrades && dbBtTrades.length > 0) {
+      inMemoryBacktestTrades = dbBtTrades
+      return dbBtTrades.filter(t => t.session_id === sessionId)
+    }
+
     return inMemoryBacktestTrades.filter(t => t.session_id === sessionId)
   },
 
   async addBacktestTrade(trade: Omit<BacktestTrade, 'id' | 'created_at'>): Promise<BacktestTrade> {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('backtest_trades')
-        .insert([trade])
-        .select()
-        .single()
-      if (error) throw error
-      return data
-    }
     const newBtTrade: BacktestTrade = {
       ...trade,
       id: `btt-${Date.now()}`,
       created_at: new Date().toISOString(),
     }
+
+    await saveDbItem('backtest_trades', newBtTrade)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('backtest_trades')
+          .insert([trade])
+          .select()
+          .single()
+        if (!error && data) {
+          inMemoryBacktestTrades.push(data)
+          return data
+        }
+      } catch (err) {}
+    }
+
     inMemoryBacktestTrades.push(newBtTrade)
     return newBtTrade
   },

@@ -9,6 +9,7 @@ import {
   Target,
   Zap,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api, STANDARD_INSTRUMENTS } from '@/services/api'
@@ -71,6 +72,7 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
   const [selectedMistakes, setSelectedMistakes] = useState<string[]>([])
   const [notes, setNotes] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeAccount) {
@@ -250,7 +252,8 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
       onTradeAdded()
       onClose()
     } catch (err: any) {
-      alert(`Error saving trade: ${err.message || 'Unknown error'}`)
+      console.error('Error saving trade:', err)
+      setSubmitError(err.message || 'Unknown error occurred while saving trade.')
     } finally {
       setIsSubmitting(false)
     }
@@ -259,10 +262,10 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-3xl rounded-xl border border-[#202838] bg-[#10141E] shadow-2xl animate-in fade-in zoom-in-95 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-xl border border-[#202838] bg-[#10141E] shadow-2xl animate-in fade-in zoom-in-95 my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#202838] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#202838] px-4 sm:px-6 py-4">
           <div className="flex items-center gap-2.5">
             <div
               style={{
@@ -288,6 +291,16 @@ export const AddTradeModal: React.FC<AddTradeModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {submitError && (
+            <div className="flex items-start gap-2 rounded-lg border border-[#F05265]/40 bg-[#F05265]/10 p-3 text-xs text-[#F05265]">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Error saving trade: </span>
+                <span>{submitError}</span>
+              </div>
+            </div>
+          )}
+
           {/* Live Calculation Header Card */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-lg border border-[#263448] bg-[#151E2B] p-3.5">
             <div>
