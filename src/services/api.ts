@@ -16,25 +16,32 @@ import {
 import { calculateTradePnl, computeDashboardMetrics } from '@/lib/calculations'
 
 // ==============================================================================
-// PERSISTENT DATABASE ENGINE
-// All data (accounts, trades, instruments, tags, strategies, journals) is permanently
-// persisted to disk in `data/jarvis_database.json` via `/api/db`, and mirrored to
-// browser storage and Supabase cloud sync.
-// Zero dummy/fake trades: only real data entered by the user is stored and analyzed.
+// PERSISTENT DATABASE & CLOUD SYNC ENGINE
+// - Production (Render/Vercel): Cloud Supabase PostgreSQL is the primary database.
+// - Localhost (Development): Backed by `data/jarvis_database.json` via Vite dev server.
+// - Dual-Layer Resilience: Browser localStorage cache ensures instant offline readiness.
 // ==============================================================================
 
+const isBrowser = typeof window !== 'undefined'
+const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
 async function fetchDbCollection<T>(collection: string): Promise<T[]> {
-  try {
-    const res = await fetch(`/api/db/${collection}`)
-    if (res.ok) {
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        try { localStorage.setItem(`jarvis_db_${collection}`, JSON.stringify(data)) } catch (_) {}
-        return data
+  if (isLocalhost) {
+    try {
+      const res = await fetch(`/api/db/${collection}`)
+      if (res.ok) {
+        const text = await res.text()
+        if (text.startsWith('[') || text.startsWith('{')) {
+          const data = JSON.parse(text)
+          if (Array.isArray(data)) {
+            try { localStorage.setItem(`jarvis_db_${collection}`, JSON.stringify(data)) } catch (_) {}
+            return data
+          }
+        }
       }
+    } catch (err) {
+      console.warn(`[Jarvis DB] Local DB fetch notice (${collection}):`, err)
     }
-  } catch (err) {
-    console.warn(`[Jarvis DB] Failed fetching /api/db/${collection}:`, err)
   }
 
   // Dual-layer fallback to browser cache
@@ -47,14 +54,16 @@ async function fetchDbCollection<T>(collection: string): Promise<T[]> {
 }
 
 async function saveDbItem<T extends { id?: string }>(collection: string, item: T): Promise<T> {
-  try {
-    await fetch(`/api/db/${collection}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    })
-  } catch (err) {
-    console.warn(`[Jarvis DB] Failed saving to /api/db/${collection}:`, err)
+  if (isLocalhost) {
+    try {
+      await fetch(`/api/db/${collection}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      })
+    } catch (err) {
+      console.warn(`[Jarvis DB] Local DB save notice (${collection}):`, err)
+    }
   }
 
   try {
@@ -73,14 +82,16 @@ async function saveDbItem<T extends { id?: string }>(collection: string, item: T
 }
 
 async function updateDbItem<T = any>(collection: string, id: string, updates: Partial<T>): Promise<void> {
-  try {
-    await fetch(`/api/db/${collection}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ...updates }),
-    })
-  } catch (err) {
-    console.warn(`[Jarvis DB] Failed updating /api/db/${collection}/${id}:`, err)
+  if (isLocalhost) {
+    try {
+      await fetch(`/api/db/${collection}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      })
+    } catch (err) {
+      console.warn(`[Jarvis DB] Local DB update notice (${collection}):`, err)
+    }
   }
 
   try {
@@ -97,12 +108,14 @@ async function updateDbItem<T = any>(collection: string, id: string, updates: Pa
 }
 
 async function deleteDbItem(collection: string, id: string): Promise<void> {
-  try {
-    await fetch(`/api/db/${collection}/${id}`, {
-      method: 'DELETE',
-    })
-  } catch (err) {
-    console.warn(`[Jarvis DB] Failed deleting /api/db/${collection}/${id}:`, err)
+  if (isLocalhost) {
+    try {
+      await fetch(`/api/db/${collection}/${id}`, {
+        method: 'DELETE',
+      })
+    } catch (err) {
+      console.warn(`[Jarvis DB] Local DB delete notice (${collection}):`, err)
+    }
   }
 
   try {
@@ -115,7 +128,43 @@ async function deleteDbItem(collection: string, id: string): Promise<void> {
   } catch (_) {}
 }
 
-// Initial defaults used if database file is empty on first boot
+// Helper to filter out frontend-only join fields before sending to PostgreSQL
+function cleanTradeForSupabase(trade: any) {
+  const allowed = [
+    'id', 'user_id', 'account_id', 'instrument_id', 'symbol', 'asset_class',
+    'direction', 'status', 'open_time', 'close_time', 'quantity', 'entry_price',
+    'exit_price', 'stop_loss', 'take_profit', 'gross_pnl', 'commission', 'fees',
+    'net_pnl', 'roi_percentage', 'r_multiple', 'strategy_id', 'setup', 'notes',
+    'emotional_state', 'mistakes', 'mae', 'mfe', 'market_session', 'duration_minutes',
+    'created_at', 'updated_at'
+  ]
+  const cleaned: Record<string, any> = {}
+  for (const key of allowed) {
+    if (trade[key] !== undefined) {
+      cleaned[key] = trade[key]
+    }
+  }
+  return cleaned
+}
+
+function cleanJournalForSupabase(journal: any) {
+  const allowed = [
+    'id', 'user_id', 'account_id', 'date', 'journal_type', 'market_overview',
+    'trading_plan', 'important_levels', 'expected_direction', 'setups_watched',
+    'trades_taken_summary', 'mistakes_made', 'emotional_state', 'lessons_learned',
+    'improvements_tomorrow', 'notes_rich_text', 'mood_score', 'attachments',
+    'save_status', 'created_at', 'updated_at'
+  ]
+  const cleaned: Record<string, any> = {}
+  for (const key of allowed) {
+    if (journal[key] !== undefined) {
+      cleaned[key] = journal[key]
+    }
+  }
+  return cleaned
+}
+
+// Initial defaults
 const INITIAL_PROFILE: Profile = {
   id: 'user-jarvis-1',
   username: 'trader',
@@ -524,10 +573,10 @@ export const api = {
       updated_at: new Date().toISOString(),
     }
 
-    // 1. Immediately persist to database file
+    // 1. Immediately persist to database file / browser storage
     await saveDbItem('accounts', newAcc)
 
-    // 2. Also save to Supabase cloud sync
+    // 2. Also save to Supabase cloud database
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase
@@ -811,13 +860,19 @@ export const api = {
       try {
         const { data, error } = await supabase
           .from('trades')
-          .select(`*, strategy:strategies(*)`)
+          .select('*')
           .order('open_time', { ascending: false })
         if (!error && data && data.length > 0) {
-          allTrades = data
-          inMemoryTrades = data
+          const strats = inMemoryStrategies.length > 0 ? inMemoryStrategies : INITIAL_STRATEGIES
+          allTrades = data.map((t: any) => ({
+            ...t,
+            strategy: strats.find(s => s.id === t.strategy_id) || null,
+          }))
+          inMemoryTrades = allTrades
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[Jarvis Engine] Supabase trades fetch note:', err)
+      }
     }
 
     if (allTrades.length === 0) {
@@ -889,15 +944,16 @@ export const api = {
       try {
         const { data, error } = await supabase
           .from('trades')
-          .select(`
-            *,
-            strategy:strategies(*),
-            executions:trade_executions(*),
-            attachments:trade_attachments(*)
-          `)
+          .select('*')
           .eq('id', id)
           .single()
-        if (!error && data) return data
+        if (!error && data) {
+          const strats = inMemoryStrategies.length > 0 ? inMemoryStrategies : INITIAL_STRATEGIES
+          return {
+            ...data,
+            strategy: strats.find(s => s.id === data.strategy_id) || null,
+          }
+        }
       } catch (err) {}
     }
     const trade = inMemoryTrades.find(t => t.id === id)
@@ -935,7 +991,7 @@ export const api = {
       updated_at: new Date().toISOString(),
     }
 
-    // 1. Persist trade to database file
+    // 1. Persist trade to local cache / disk
     await saveDbItem('trades', newTrade)
 
     // 2. Update account balance in memory and database
@@ -950,20 +1006,25 @@ export const api = {
       }
     }
 
-    // 3. Supabase cloud sync
+    // 3. Supabase cloud sync with clean PostgreSQL column payload
     if (isSupabaseConfigured) {
       try {
+        const cleanPayload = cleanTradeForSupabase(newTrade)
         const { data, error } = await supabase
           .from('trades')
-          .insert([newTrade])
-          .select(`*, strategy:strategies(*)`)
+          .insert([cleanPayload])
+          .select()
           .single()
         if (!error && data) {
-          inMemoryTrades.unshift(data)
-          return data
+          const createdTrade: Trade = { ...data, strategy: strat }
+          inMemoryTrades.unshift(createdTrade)
+          return createdTrade
+        }
+        if (error) {
+          console.warn('[Jarvis Engine] Supabase trade insert error:', error.message || error)
         }
       } catch (err: any) {
-        console.warn('[Jarvis Engine] Supabase trade sync note:', err.message || err)
+        console.warn('[Jarvis Engine] Supabase trade sync exception:', err.message || err)
       }
     }
 
@@ -975,7 +1036,8 @@ export const api = {
     await updateDbItem('trades', id, updates)
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('trades').update(updates).eq('id', id)
+        const cleanUpdates = cleanTradeForSupabase(updates)
+        await supabase.from('trades').update(cleanUpdates).eq('id', id)
       } catch (err) {}
     }
 
@@ -1095,12 +1157,12 @@ export const api = {
     if (isSupabaseConfigured) {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        const payload = {
+        const payload = cleanJournalForSupabase({
           ...journal,
           user_id: user?.id || INITIAL_PROFILE.id,
           save_status: 'saved',
           updated_at: new Date().toISOString(),
-        }
+        })
         await supabase
           .from('daily_journals')
           .upsert(payload, { onConflict: 'user_id,date,journal_type' })
@@ -1117,6 +1179,31 @@ export const api = {
 
   // Routines & Tracker
   async getRoutines(dateStr: string): Promise<Routine[]> {
+    if (isSupabaseConfigured) {
+      try {
+        const { data: routines, error } = await supabase
+          .from('routines')
+          .select(`*, items:routine_items(*)`)
+        if (!error && routines && routines.length > 0) {
+          const { data: completions } = await supabase
+            .from('routine_completions')
+            .select('item_id, is_completed')
+            .eq('date', dateStr)
+
+          const compMap = new Map((completions || []).map(c => [c.item_id, c.is_completed]))
+          return routines.map((r: any) => ({
+            ...r,
+            items: (r.items || []).map((it: any) => ({
+              ...it,
+              is_completed: compMap.get(it.id) || false,
+            })),
+          }))
+        }
+      } catch (err) {
+        console.warn('[Jarvis Engine] Supabase routines fetch note:', err)
+      }
+    }
+
     let routines = inMemoryRoutines
     const dbRoutines = await fetchDbCollection<Routine>('routines')
     if (dbRoutines && dbRoutines.length > 0) {
@@ -1155,16 +1242,14 @@ export const api = {
 
     if (isSupabaseConfigured) {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('routine_completions').upsert({
-            user_id: user.id,
-            routine_id: routineId,
-            item_id: itemId,
-            date: dateStr,
-            is_completed: isCompleted,
-          }, { onConflict: 'user_id,item_id,date' })
-        }
+        await supabase.from('routine_completions').upsert({
+          id: `${itemId}_${dateStr}`,
+          user_id: 'user-jarvis-1',
+          routine_id: routineId,
+          item_id: itemId,
+          date: dateStr,
+          is_completed: isCompleted,
+        }, { onConflict: 'user_id,item_id,date' })
       } catch (err) {}
     }
     return isCompleted
@@ -1227,7 +1312,7 @@ export const api = {
           .select('*')
           .eq('session_id', sessionId)
           .order('entry_time', { ascending: true })
-        if (!error && data && data.length > 0) return data
+        if (!error && data) return data
       } catch (err) {}
     }
 
